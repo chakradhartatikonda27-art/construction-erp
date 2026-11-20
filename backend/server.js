@@ -84,6 +84,44 @@ function serveStatic(req, res, filePath) {
   });
 }
 
+function getActiveRole() {
+  const activeUserId = dbLayer.getConfig('me', 'u1');
+  const user = dbLayer.db.prepare('SELECT role FROM users WHERE id = ?').get(activeUserId);
+  return user ? user.role : 'owner';
+}
+
+function checkPerm(res, action) {
+  const role = getActiveRole();
+  if (role === 'owner') return true; // Owner has all permissions across all modules
+  const PERM_ROLES = {
+    createProject: ['pm'],
+    team: ['pm'],
+    stage: ['pm'],
+    handover: ['pm'],
+    dprApprove: ['pm'],
+    approve: ['pm'],
+    raisePR: ['pm', 'eng', 'sup', 'store'],
+    po: ['pm', 'acc', 'store'],
+    grn: ['store', 'pm'],
+    dpr: ['eng', 'sup', 'pm'],
+    labour: ['eng', 'sup', 'pm'],
+    qa: ['qa', 'pm', 'eng'],
+    bill: ['acc'],
+    expense: ['acc', 'pm'],
+    contracts: ['pm', 'acc'],
+    drawings: ['pm', 'eng', 'qa'],
+    tenders: ['pm'],
+    equipment: ['pm', 'sup'],
+    documents: ['pm', 'eng', 'qa', 'acc', 'store']
+  };
+  const allowed = PERM_ROLES[action] || [];
+  if (!allowed.includes(role)) {
+    sendJSON(res, { ok: false, error: `Permission Denied: '${action}' is restricted for role '${role}'. Owner or authorized role required.` }, 403);
+    return false;
+  }
+  return true;
+}
+
 async function requestHandler(req, res) {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
@@ -108,6 +146,7 @@ async function requestHandler(req, res) {
 
       // 2. Create Project
       if (pathname === '/api/projects' && req.method === 'POST') {
+        if (!checkPerm(res, 'createProject')) return;
         const body = await parseJSON(req);
         const pId = dbLayer.createProjectRecord(body);
         dbLayer.setConfig('ap', pId);
@@ -117,6 +156,7 @@ async function requestHandler(req, res) {
       // 3. Assign team
       const teamMatch = pathname.match(/^\/api\/projects\/([^/]+)\/team$/);
       if (teamMatch && req.method === 'POST') {
+        if (!checkPerm(res, 'team')) return;
         const pId = teamMatch[1];
         const body = await parseJSON(req);
         dbLayer.db.prepare('UPDATE projects SET team = ? WHERE id = ?').run(JSON.stringify(body.team || []), pId);
@@ -127,6 +167,7 @@ async function requestHandler(req, res) {
       // 4. Start Stage
       const startMatch = pathname.match(/^\/api\/projects\/([^/]+)\/stages\/(\d+)\/start$/);
       if (startMatch && req.method === 'POST') {
+        if (!checkPerm(res, 'stage')) return;
         const pId = startMatch[1];
         const k = parseInt(startMatch[2], 10);
         const today = dbLayer.getConfig('today');
@@ -149,6 +190,7 @@ async function requestHandler(req, res) {
       // 5. Complete Stage
       const doneMatch = pathname.match(/^\/api\/projects\/([^/]+)\/stages\/(\d+)\/complete$/);
       if (doneMatch && req.method === 'POST') {
+        if (!checkPerm(res, 'stage')) return;
         const pId = doneMatch[1];
         const k = parseInt(doneMatch[2], 10);
         const today = dbLayer.getConfig('today');
@@ -183,6 +225,7 @@ async function requestHandler(req, res) {
       // 6. Handover
       const handoverMatch = pathname.match(/^\/api\/projects\/([^/]+)\/handover$/);
       if (handoverMatch && req.method === 'POST') {
+        if (!checkPerm(res, 'handover')) return;
         const pId = handoverMatch[1];
         const today = dbLayer.getConfig('today');
         const proj = dbLayer.db.prepare('SELECT * FROM projects WHERE id = ?').get(pId);
@@ -248,6 +291,7 @@ async function requestHandler(req, res) {
 
       // 9. Labour Attendance
       if (pathname === '/api/attendance/labour' && req.method === 'POST') {
+        if (!checkPerm(res, 'labour')) return;
         const body = await parseJSON(req);
         const today = dbLayer.getConfig('today');
         const pId = body.projectId;
@@ -277,6 +321,7 @@ async function requestHandler(req, res) {
 
       // 10. Quick Labour Copy
       if (pathname === '/api/attendance/labour/quick' && req.method === 'POST') {
+        if (!checkPerm(res, 'labour')) return;
         const body = await parseJSON(req);
         const today = dbLayer.getConfig('today');
         const pId = body.projectId;
@@ -306,6 +351,7 @@ async function requestHandler(req, res) {
 
       // 11. Staff Attendance Bulk Save
       if (pathname === '/api/attendance/staff-mark' && req.method === 'POST') {
+        if (!checkPerm(res, 'labour')) return;
         const body = await parseJSON(req);
         const today = dbLayer.getConfig('today');
         const pId = body.projectId;
@@ -332,6 +378,7 @@ async function requestHandler(req, res) {
 
       // 12. Submit DPR
       if (pathname === '/api/dpr' && req.method === 'POST') {
+        if (!checkPerm(res, 'dpr')) return;
         const body = await parseJSON(req);
         const today = dbLayer.getConfig('today');
         const meId = dbLayer.getConfig('me');
@@ -367,6 +414,7 @@ async function requestHandler(req, res) {
       // 13. Approve / Reject DPR
       const apprDprMatch = pathname.match(/^\/api\/dpr\/([^/]+)\/approve$/);
       if (apprDprMatch && req.method === 'POST') {
+        if (!checkPerm(res, 'dprApprove')) return;
         const dprId = apprDprMatch[1];
         const body = await parseJSON(req);
         const ok = Boolean(body.ok);
@@ -403,6 +451,7 @@ async function requestHandler(req, res) {
 
       // 14. Bulk Approve DPRs
       if (pathname === '/api/dpr/bulk-approve' && req.method === 'POST') {
+        if (!checkPerm(res, 'dprApprove')) return;
         const submitted = dbLayer.db.prepare('SELECT * FROM dprs WHERE status = "Submitted"').all();
         let n = 0;
         for (const d of submitted) {
@@ -421,6 +470,7 @@ async function requestHandler(req, res) {
 
       // 15. Material PR Raise
       if (pathname === '/api/materials/request' && req.method === 'POST') {
+        if (!checkPerm(res, 'raisePR')) return;
         const body = await parseJSON(req);
         const today = dbLayer.getConfig('today');
         const meId = dbLayer.getConfig('me');
@@ -443,6 +493,7 @@ async function requestHandler(req, res) {
       // 16. PR Approve / Reject
       const prApprMatch = pathname.match(/^\/api\/materials\/pr\/([^/]+)\/approve$/);
       if (prApprMatch && req.method === 'POST') {
+        if (!checkPerm(res, 'approve')) return;
         const prId = prApprMatch[1];
         const body = await parseJSON(req);
         const st = body.ok ? 'Approved' : 'Rejected';
@@ -455,6 +506,7 @@ async function requestHandler(req, res) {
       // 17. Issue PO
       const poMatch = pathname.match(/^\/api\/materials\/pr\/([^/]+)\/po$/);
       if (poMatch && req.method === 'POST') {
+        if (!checkPerm(res, 'po')) return;
         const prId = poMatch[1];
         const body = await parseJSON(req);
         dbLayer.db.prepare('UPDATE prs SET status = "Ordered", vendor = ?, rate = ? WHERE id = ?').run(body.vendor, body.rate, prId);
@@ -467,6 +519,7 @@ async function requestHandler(req, res) {
       // 18. GRN Goods Receipt
       const grnMatch = pathname.match(/^\/api\/materials\/pr\/([^/]+)\/grn$/);
       if (grnMatch && req.method === 'POST') {
+        if (!checkPerm(res, 'grn')) return;
         const prId = grnMatch[1];
         const pr = dbLayer.db.prepare('SELECT * FROM prs WHERE id = ?').get(prId);
         if (!pr) return sendJSON(res, { ok: false, error: 'PR not found' }, 404);
@@ -479,10 +532,12 @@ async function requestHandler(req, res) {
 
       // 19. Bulk PR Action
       if (pathname === '/api/materials/bulk-approve' && req.method === 'POST') {
+        if (!checkPerm(res, 'approve')) return;
         dbLayer.db.prepare('UPDATE prs SET status = "Approved" WHERE status = "Requested"').run();
         return sendJSON(res, { ok: true, state: dbLayer.getFullState() });
       }
       if (pathname === '/api/materials/bulk-grn' && req.method === 'POST') {
+        if (!checkPerm(res, 'grn')) return;
         const ordered = dbLayer.db.prepare('SELECT * FROM prs WHERE status = "Ordered"').all();
         for (const pr of ordered) {
           dbLayer.db.prepare('UPDATE prs SET status = "Received" WHERE id = ?').run(pr.id);
@@ -493,6 +548,7 @@ async function requestHandler(req, res) {
 
       // 20. QA Inspection
       if (pathname === '/api/qa/inspect' && req.method === 'POST') {
+        if (!checkPerm(res, 'qa')) return;
         const body = await parseJSON(req);
         const today = dbLayer.getConfig('today');
         const meId = dbLayer.getConfig('me');
@@ -519,6 +575,7 @@ async function requestHandler(req, res) {
       // 21. Invoice Payment
       const payMatch = pathname.match(/^\/api\/billing\/invoice\/([^/]+)\/pay$/);
       if (payMatch && req.method === 'POST') {
+        if (!checkPerm(res, 'bill')) return;
         const invId = payMatch[1];
         const inv = dbLayer.db.prepare('SELECT * FROM invoices WHERE id = ?').get(invId);
         if (!inv) return sendJSON(res, { ok: false, error: 'Invoice not found' }, 404);
@@ -530,6 +587,7 @@ async function requestHandler(req, res) {
 
       // 22. RA Bill
       if (pathname === '/api/billing/ra' && req.method === 'POST') {
+        if (!checkPerm(res, 'bill')) return;
         const body = await parseJSON(req);
         const today = dbLayer.getConfig('today');
         const invId = 'INV-' + dbLayer.uid();
@@ -548,6 +606,7 @@ async function requestHandler(req, res) {
 
       // 23. Add Expense
       if (pathname === '/api/expenses' && req.method === 'POST') {
+        if (!checkPerm(res, 'expense')) return;
         const body = await parseJSON(req);
         const today = dbLayer.getConfig('today');
         const id = dbLayer.uid();
@@ -589,6 +648,7 @@ async function requestHandler(req, res) {
 
       // 25b. Tender Create
       if (pathname === '/api/tenders' && req.method === 'POST') {
+        if (!checkPerm(res, 'tenders')) return;
         const b = await parseJSON(req);
         const tId = 'T-' + Math.floor(1000 + Math.random() * 9000);
         dbLayer.db.prepare('INSERT INTO tenders (id, title, client, type, val, emd, sub_date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
@@ -599,6 +659,7 @@ async function requestHandler(req, res) {
 
       // 25c. Drawing Upload
       if (pathname === '/api/drawings' && req.method === 'POST') {
+        if (!checkPerm(res, 'drawings')) return;
         const b = await parseJSON(req);
         const dId = 'DWG-' + Math.floor(100 + Math.random() * 900);
         const today = dbLayer.getConfig('today');
@@ -610,6 +671,7 @@ async function requestHandler(req, res) {
 
       // 25d. Equipment Add / Update
       if (pathname === '/api/equipment' && req.method === 'POST') {
+        if (!checkPerm(res, 'equipment')) return;
         const b = await parseJSON(req);
         const eqId = b.id || ('EQ-' + Math.floor(10 + Math.random() * 90));
         dbLayer.db.prepare('INSERT OR REPLACE INTO equipment (id, name, code, type, project_id, status, hours, fuel_cap, op_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
@@ -620,6 +682,7 @@ async function requestHandler(req, res) {
 
       // 25e. Fuel Log
       if (pathname === '/api/equipment/fuel' && req.method === 'POST') {
+        if (!checkPerm(res, 'equipment')) return;
         const b = await parseJSON(req);
         const fId = 'FL-' + Math.floor(100 + Math.random() * 900);
         const today = dbLayer.getConfig('today');
@@ -631,6 +694,7 @@ async function requestHandler(req, res) {
 
       // 25f. Contract Create / RA Bill
       if (pathname === '/api/contracts' && req.method === 'POST') {
+        if (!checkPerm(res, 'contracts')) return;
         const b = await parseJSON(req);
         const cId = 'SC-' + Math.floor(100 + Math.random() * 900);
         dbLayer.db.prepare('INSERT INTO contracts_tbl (id, project_id, vendor_name, scope, val, ra_billed, retention, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
@@ -640,6 +704,7 @@ async function requestHandler(req, res) {
       }
 
       if (pathname === '/api/contracts/ra-bill' && req.method === 'POST') {
+        if (!checkPerm(res, 'contracts')) return;
         const b = await parseJSON(req);
         const contract = dbLayer.db.prepare('SELECT * FROM contracts_tbl WHERE id = ?').get(b.contractId);
         if (contract) {
@@ -653,6 +718,7 @@ async function requestHandler(req, res) {
 
       // 25g. NCR Create / Resolve
       if (pathname === '/api/qa/ncr' && req.method === 'POST') {
+        if (!checkPerm(res, 'qa')) return;
         const b = await parseJSON(req);
         const nId = b.id || ('NCR-' + Math.floor(10 + Math.random() * 90));
         const today = dbLayer.getConfig('today');
@@ -669,6 +735,7 @@ async function requestHandler(req, res) {
 
       // 25h. Documents
       if (pathname === '/api/documents' && req.method === 'POST') {
+        if (!checkPerm(res, 'documents')) return;
         const b = await parseJSON(req);
         const docId = b.id || ('DOC-' + Math.floor(10 + Math.random() * 90));
         const today = dbLayer.getConfig('today');
@@ -681,6 +748,7 @@ async function requestHandler(req, res) {
 
       // 25i. Snagging
       if (pathname === '/api/snags' && req.method === 'POST') {
+        if (!checkPerm(res, 'qa')) return;
         const b = await parseJSON(req);
         const sId = b.id || ('SNG-' + Math.floor(10 + Math.random() * 90));
         const today = dbLayer.getConfig('today');

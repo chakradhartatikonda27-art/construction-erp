@@ -37,6 +37,15 @@ nav .nav-divider{height:1px;background:var(--sidebar-border);margin:10px 6px}
 nav .nav-section-title{padding:6px 12px 4px;font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em}
 nav .bd{margin-left:auto;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;border-radius:99px;padding:1px 6px;font-size:10px;font-weight:700}
 nav a.on .bd{background:var(--pri);color:#fff;border-color:var(--pri)}
+.role-scope-box{padding:10px 14px;background:#f8fafc;border-bottom:1px solid var(--sidebar-border);display:flex;flex-direction:column;gap:5px}
+.role-scope-header{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.role-badge-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--dark);background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;padding:3px 7px}
+.role-badge-tag .dot{width:6px;height:6px;border-radius:50%;background:var(--ok)}
+.role-badge-tag.owner .dot{background:var(--pri)}
+.role-scope-sub{font-size:10.5px;color:var(--mut);line-height:1.3}
+.view-toggle-btn{background:#ffffff;border:1px solid #cbd5e1;border-radius:5px;font-size:10px;font-weight:600;padding:2px 7px;cursor:pointer;color:var(--sidebar-text);transition:all .15s ease}
+.view-toggle-btn:hover{background:#f1f5f9;color:var(--dark)}
+.view-toggle-btn.active{background:var(--dark);color:#fff;border-color:var(--dark)}
 main{flex:1;min-width:0;display:flex;flex-direction:column}
 header{background:#fff;border-bottom:1px solid var(--line);padding:9px 18px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5;flex-wrap:wrap}
 header h1{font-size:16px;flex:1;min-width:140px;font-weight:700;color:var(--dark);display:flex;align-items:center;gap:8px}
@@ -114,9 +123,9 @@ const ROLES={
   pm:'Project Manager',
   eng:'Site Engineer',
   sup:'Site Supervisor',
-  store:'Procurement / Stores',
+  store:'Procurement Manager',
   qa:'QA/QC Engineer',
-  acc:'Chief Accountant'
+  acc:'Accountant'
 };
 
 /* SVG Icons matching user's design screenshot */
@@ -163,11 +172,138 @@ const PLATFORM_NAV = [
   ['settings', 'Settings & Administration']
 ];
 
+/* Role-Specific Dedicated Navigation Flows */
+const ROLE_MENUS = {
+  owner: {
+    roleName: 'Director / CEO',
+    subtitle: 'All Modules & Full Permissions',
+    items: [
+      { id: 'dash', label: 'Dashboard', icon: 'dash' },
+      { id: 'crm', label: 'CRM & Tenders', icon: 'crm' },
+      { id: 'proj', label: 'Project Management', icon: 'proj' },
+      { id: 'eng', label: 'Engineering & Estimation', icon: 'eng' },
+      { id: 'site', label: 'Site Operations', icon: 'site' },
+      { id: 'proc', label: 'Procurement & Vendors', icon: 'proc' },
+      { id: 'inv', label: 'Inventory & Materials', icon: 'inv' },
+      { id: 'hr', label: 'HR & Workforce', icon: 'hr' },
+      { id: 'fleet', label: 'Equipment & Fleet', icon: 'fleet' },
+      { id: 'contracts', label: 'Contracts & Commercial', icon: 'contracts' },
+      { id: 'fin', label: 'Finance & Accounting', icon: 'fin' },
+      { id: 'qa', label: 'Quality, Safety & Compliance', icon: 'qa' },
+      { divider: true },
+      { id: 'reports', label: 'Reports & Analytics', icon: 'reports' },
+      { id: 'docs', label: 'Documents & Approvals', icon: 'docs' },
+      { id: 'handover', label: 'Handover & Maintenance', icon: 'handover' },
+      { id: 'settings', label: 'Settings & Administration', icon: 'settings' }
+    ]
+  },
+  pm: {
+    roleName: 'Project Manager',
+    subtitle: 'Project Execution & Control',
+    items: [
+      { id: 'dash', label: 'Dashboard', icon: 'dash' },
+      { id: 'proj', label: 'Projects', icon: 'proj' },
+      { id: 'site', label: 'Site Operations', icon: 'site' },
+      { id: 'eng', label: 'Engineering', icon: 'eng' },
+      { id: 'proc', label: 'Procurement', icon: 'proc' },
+      { id: 'inv', label: 'Inventory', icon: 'inv' },
+      { id: 'contracts', label: 'Contracts', icon: 'contracts' },
+      { id: 'qa', label: 'Quality', icon: 'qa' },
+      { divider: true },
+      { id: 'reports', label: 'Reports & Analytics', icon: 'reports' },
+      { id: 'docs', label: 'Documents & Approvals', icon: 'docs' }
+    ]
+  },
+  eng: {
+    roleName: 'Site Engineer',
+    subtitle: 'Daily Site Activities',
+    items: [
+      { id: 'proj', tab: 'stages', label: 'My Tasks', icon: 'proj' },
+      { id: 'site', tab: 'dpr', label: 'DPR', icon: 'site' },
+      { id: 'site', tab: 'muster', label: 'Attendance', icon: 'hr' },
+      { id: 'proc', tab: 'indent', label: 'Material Requests', icon: 'proc' },
+      { id: 'eng', tab: 'drawings', label: 'Drawings', icon: 'eng' },
+      { id: 'qa', tab: 'insp', label: 'Quality', icon: 'qa' },
+      { id: 'site', tab: 'photos', label: 'Site Photos', icon: 'site' },
+      { divider: true },
+      { id: 'docs', tab: 'register', label: 'Documents & Approvals', icon: 'docs' }
+    ]
+  },
+  acc: {
+    roleName: 'Accountant',
+    subtitle: 'Financial Operations',
+    items: [
+      { id: 'dash', tab: 'exec', label: 'Dashboard', icon: 'dash' },
+      { id: 'fin', tab: 'billing', label: 'Client Billing', icon: 'fin' },
+      { id: 'fin', tab: 'pay', label: 'Vendor Payments', icon: 'fin' },
+      { id: 'hr', tab: 'payroll', label: 'Payroll', icon: 'hr' },
+      { id: 'fin', tab: 'expenses', label: 'Expenses', icon: 'fin' },
+      { id: 'fin', tab: 'cashflow', label: 'Accounting', icon: 'fin' },
+      { divider: true },
+      { id: 'reports', tab: 'financial', label: 'Reports', icon: 'reports' }
+    ]
+  },
+  store: {
+    roleName: 'Procurement Manager',
+    subtitle: 'Purchasing & Vendor Management',
+    items: [
+      { id: 'proc', tab: 'indent', label: 'Indents', icon: 'proc' },
+      { id: 'proc', tab: 'rfq', label: 'RFQ', icon: 'proc' },
+      { id: 'proc', tab: 'quotes', label: 'Vendor Quotations', icon: 'proc' },
+      { id: 'proc', tab: 'po', label: 'Purchase Orders', icon: 'proc' },
+      { id: 'inv', tab: 'grn', label: 'GRN', icon: 'inv' },
+      { id: 'proc', tab: 'suppliers', label: 'Suppliers', icon: 'proc' },
+      { divider: true },
+      { id: 'reports', tab: 'procurement', label: 'Reports', icon: 'reports' }
+    ]
+  },
+  sup: {
+    roleName: 'Site Supervisor',
+    subtitle: 'Field Supervision & Crew',
+    items: [
+      { id: 'site', tab: 'dpr', label: 'Site Operations & DPR', icon: 'site' },
+      { id: 'site', tab: 'muster', label: 'Labour Attendance', icon: 'hr' },
+      { id: 'fleet', tab: 'fuel', label: 'Equipment & Fuel', icon: 'fleet' },
+      { id: 'proc', tab: 'indent', label: 'Material Requests', icon: 'proc' },
+      { divider: true },
+      { id: 'qa', tab: 'hse', label: 'HSE Safety Permits', icon: 'qa' }
+    ]
+  },
+  qa: {
+    roleName: 'QA/QC Engineer',
+    subtitle: 'Quality, Safety & Compliance',
+    items: [
+      { id: 'qa', tab: 'insp', label: 'Quality Inspections', icon: 'qa' },
+      { id: 'qa', tab: 'ncr', label: 'NCR & Defects', icon: 'qa' },
+      { id: 'qa', tab: 'hse', label: 'HSE Safety Permits', icon: 'qa' },
+      { id: 'eng', tab: 'drawings', label: 'Drawings & Specs', icon: 'eng' },
+      { divider: true },
+      { id: 'docs', tab: 'register', label: 'Documents & Approvals', icon: 'docs' },
+      { id: 'reports', tab: 'mis', label: 'Reports & Audits', icon: 'reports' }
+    ]
+  }
+};
+
 const PERM={
-  createProject:['owner','pm'],team:['owner','pm'],stage:['owner','pm'],approve:['owner','pm'],
-  raisePR:['owner','pm','eng','sup','store'],po:['owner','pm','acc','store'],grn:['store','owner','pm'],
-  dpr:['eng','sup','pm'],labour:['eng','sup','pm'],qa:['qa','owner'],bill:['acc','owner'],
-  expense:['acc','owner'],handover:['owner','pm'],contracts:['owner','pm','acc'],ncr:['qa','owner','pm']
+  createProject:['owner','pm'],
+  team:['owner','pm'],
+  stage:['owner','pm'],
+  handover:['owner','pm'],
+  approve:['owner','pm'],
+  dprApprove:['owner','pm'],
+  raisePR:['owner','pm','eng','sup','store'],
+  po:['owner','pm','acc','store'],
+  grn:['store','owner','pm'],
+  dpr:['eng','sup','pm','owner'],
+  labour:['eng','sup','pm','owner'],
+  qa:['qa','owner','pm','eng'],
+  bill:['acc','owner'],
+  expense:['acc','owner','pm'],
+  contracts:['owner','pm','acc'],
+  drawings:['pm','eng','qa','owner'],
+  ncr:['qa','owner','pm','eng'],
+  tenders:['owner','pm'],
+  equipment:['owner','pm','sup']
 };
 
 const MATS=[
@@ -186,10 +322,10 @@ const USERS=[
   {id:'u1',name:'Mohan S.',role:'owner',cost:0},
   {id:'u2',name:'Ravi Kumar',role:'pm',cost:3500},
   {id:'u3',name:'Anitha Rao',role:'eng',cost:2200},
-  {id:'u4',name:'Suresh (Supervisor)',role:'sup',cost:1500},
-  {id:'u5',name:'Lakshmi (Stores)',role:'store',cost:1400},
+  {id:'u7',name:'Prakash (Accounts)',role:'acc',cost:0},
+  {id:'u5',name:'Lakshmi (Procurement)',role:'store',cost:1400},
   {id:'u6',name:'Sita Devi',role:'qa',cost:2300},
-  {id:'u7',name:'Prakash (Accounts)',role:'acc',cost:0}
+  {id:'u4',name:'Suresh (Supervisor)',role:'sup',cost:1500}
 ];
 
 const CITIES={Hyderabad:[17.4326,78.4071],Visakhapatnam:[17.7231,83.3013],Vijayawada:[16.5062,80.648],Kigali:[-1.9441,30.0619]};
@@ -221,7 +357,8 @@ let S={
   contracts:[],
   ncrs:[],
   documents:[],
-  snags:[]
+  snags:[],
+  showAllModules: false
 };
 
 function addDays(d,n){const x=new Date(d+'T00:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)}
@@ -338,10 +475,36 @@ function rolebar(){
   return USERS.map(u=>`<button class="${u.id===S.me?'on':''}" onclick="switchUser('${u.id}')">${u.name.split(' ')[0]} <small>(${u.role})</small></button>`).join('');
 }
 
+function navItemClick(modKey, tabKey=''){
+  if(tabKey){
+    setTab(modKey, tabKey);
+  }
+  go(modKey);
+}
+
+function toggleModuleView(){
+  S.showAllModules = !S.showAllModules;
+  render();
+  toast(S.showAllModules ? 'Viewing All Modules (Permissions active)' : `Viewing ${ROLE_MENUS[me().role]?.roleName || 'Role'} Menu`);
+}
+
 async function switchUser(id){
   S.me=id;
+  const user = me();
+  const roleCfg = ROLE_MENUS[user.role] || ROLE_MENUS.owner;
+  
+  // If current view is not permitted in role-filtered mode, navigate to first permitted module
+  if (!S.showAllModules && user.role !== 'owner') {
+    const allowed = roleCfg.items.filter(x => !x.divider);
+    const hasCur = allowed.some(x => x.id === S.v);
+    if (!hasCur && allowed.length > 0) {
+      S.v = allowed[0].id;
+      if (allowed[0].tab) setTab(allowed[0].id, allowed[0].tab);
+    }
+  }
+
   render();
-  toast(`Active user: ${me().name} (${ROLES[me().role]})`);
+  toast(`Active user: ${user.name} · ${roleCfg.roleName} (${roleCfg.subtitle})`);
   await api('/api/system/switch-user', { userId: id });
 }
 
@@ -379,18 +542,43 @@ function render(){
 
   const cnt=k=>{const n=pe.filter(x=>x[0]===k).length;return n?`<span class="bd">${n}</span>`:''};
 
-  /* Left Sidebar Navigation with Icons */
-  let navHtml = '';
-  CORE_NAV.forEach(([k, l]) => {
-    const isAct = (S.v === k || (S.v === 'pd' && k === 'proj'));
-    navHtml += `<a class="${isAct?'on':''}" onclick="go('${k}')">${ICONS[k]||''}<span>${l}</span>${cnt(k)}</a>`;
-  });
+  const r = me().role;
+  const roleCfg = ROLE_MENUS[r] || ROLE_MENUS.owner;
+  const isOwner = (r === 'owner');
 
-  navHtml += `<div class="nav-divider"></div>`;
-  PLATFORM_NAV.forEach(([k, l]) => {
-    const isAct = (S.v === k);
-    navHtml += `<a class="${isAct?'on':''}" onclick="go('${k}')">${ICONS[k]||''}<span>${l}</span>${cnt(k)}</a>`;
-  });
+  /* Sidebar Role Header */
+  let navHtml = `
+    <div class="role-scope-box">
+      <div class="role-scope-header">
+        <span class="role-badge-tag ${isOwner?'owner':''}"><span class="dot"></span> ${roleCfg.roleName}</span>
+        ${!isOwner ? `<button class="view-toggle-btn ${S.showAllModules?'active':''}" onclick="toggleModuleView()" title="Switch between role-specific menu and all modules">${S.showAllModules?'All Modules':'Role View'}</button>` : `<span style="font-size:10.5px;font-weight:700;color:var(--pri)">Full Access</span>`}
+      </div>
+      <div class="role-scope-sub">${isOwner ? 'Executive Decision-Making & Full Platform Control' : roleCfg.subtitle}</div>
+    </div>
+  `;
+
+  if (isOwner || S.showAllModules) {
+    /* Show All Modules (Owner view or All Modules mode) */
+    CORE_NAV.forEach(([k, l]) => {
+      const isAct = (S.v === k || (S.v === 'pd' && k === 'proj'));
+      navHtml += `<a class="${isAct?'on':''}" onclick="navItemClick('${k}')">${ICONS[k]||''}<span>${l}</span>${cnt(k)}</a>`;
+    });
+    navHtml += `<div class="nav-divider"></div>`;
+    PLATFORM_NAV.forEach(([k, l]) => {
+      const isAct = (S.v === k);
+      navHtml += `<a class="${isAct?'on':''}" onclick="navItemClick('${k}')">${ICONS[k]||''}<span>${l}</span>${cnt(k)}</a>`;
+    });
+  } else {
+    /* Role-Filtered Menu (Dedicated workflow for PM, Eng, Acc, Store, etc.) */
+    roleCfg.items.forEach(item => {
+      if (item.divider) {
+        navHtml += `<div class="nav-divider"></div>`;
+        return;
+      }
+      const isAct = item.tab ? (S.v === item.id && getTab(item.id, '') === item.tab) : (S.v === item.id || (S.v === 'pd' && item.id === 'proj'));
+      navHtml += `<a class="${isAct?'on':''}" onclick="navItemClick('${item.id}', '${item.tab||''}')">${ICONS[item.icon]||ICONS[item.id]||''}<span>${item.label}</span>${cnt(item.id)}</a>`;
+    });
+  }
 
   $('#nav').innerHTML = navHtml;
 
@@ -1866,6 +2054,7 @@ V.fin=()=>{
   ${tabNav('fin', [
     ['budget','Project Budget vs Actuals'],
     ['billing','Client Milestone Billing'],
+    ['pay','Vendor & Subcontractor Payments'],
     ['expenses','Site Petty Cash Expenses'],
     ['cashflow','Cash Flow & Receivables']
   ])}
@@ -1903,6 +2092,33 @@ V.fin=()=>{
             <td class="num"><b>${mn(i.amt)}</b></td>
             <td>${tag(i.st)}</td>
             <td>${i.st==='Pending'&&can('bill')?`<button class="btn sm ok" onclick="payInvoice('${i.id}')">Mark Received</button>`:'—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  `:''}
+
+  ${tab==='pay'?`
+    <div class="card">
+      <h3>Vendor & Subcontractor Payment Processing – ${p.name}</h3>
+      <table>
+        <thead><tr><th>PO / Contract #</th><th>Payee / Party</th><th>Scope / Material</th><th class="num">Amount (₹)</th><th>Verification Status</th><th>Action</th></tr></thead>
+        <tbody>
+          ${(S.prs||[]).filter(r=>r.pid===p.id&&(r.st==='Ordered'||r.st==='Received')).map(r=>`<tr>
+            <td><b>${r.id}</b></td>
+            <td><b>${r.vendor||'Material Vendor'}</b></td>
+            <td>${r.qty} of ${mat(r.m)?mat(r.m)[1]:r.m}</td>
+            <td class="num"><b>₹${nf(r.qty*(r.rate||1))}</b></td>
+            <td><span class="tag t-ok">${r.st==='Received'?'GRN Verified · Ready':'Delivery in Transit'}</span></td>
+            <td>${can('bill')?`<button class="btn sm ok" onclick="toast('Vendor invoice payout disbursed for ${r.id}')">Disburse Payment</button>`:'<small class="mut">View Only</small>'}</td>
+          </tr>`).join('')}
+          ${(S.contracts||[]).filter(c=>!c.project_id||c.project_id===p.id).filter(c=>c.ra_billed>0).map(c=>`<tr>
+            <td><b>${c.id}</b></td>
+            <td><b>${c.vendor_name}</b></td>
+            <td>${c.scope}</td>
+            <td class="num"><b>${mn(c.ra_billed)}</b></td>
+            <td><span class="tag t-blue">RA Certified (5% Retained)</span></td>
+            <td>${can('bill')?`<button class="btn sm ok" onclick="toast('Subcontractor RA payout disbursed to ${c.vendor_name}')">Disburse Payout</button>`:'<small class="mut">View Only</small>'}</td>
           </tr>`).join('')}
         </tbody>
       </table>
