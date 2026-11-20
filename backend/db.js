@@ -364,7 +364,99 @@ function initSchema() {
       due_date TEXT NOT NULL,
       assigned_to TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS leads (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      client_name TEXT NOT NULL,
+      contact_person TEXT,
+      phone TEXT,
+      email TEXT,
+      source TEXT NOT NULL,
+      est_value REAL NOT NULL,
+      location TEXT,
+      assigned_to TEXT,
+      status TEXT NOT NULL,
+      notes TEXT,
+      created_at TEXT NOT NULL,
+      converted_client_id TEXT,
+      converted_opp_id TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS clients (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      contact_person TEXT,
+      designation TEXT,
+      phone TEXT,
+      email TEXT,
+      address TEXT,
+      city TEXT,
+      gstin TEXT,
+      pan TEXT,
+      tier TEXT NOT NULL,
+      status TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS opportunities (
+      id TEXT PRIMARY KEY,
+      lead_id TEXT,
+      client_id TEXT,
+      client_name TEXT NOT NULL,
+      title TEXT NOT NULL,
+      scope TEXT NOT NULL,
+      est_val REAL NOT NULL,
+      stage TEXT NOT NULL,
+      win_prob INTEGER NOT NULL,
+      responsible_mgr TEXT,
+      expected_close TEXT,
+      status TEXT NOT NULL,
+      converted_project_id TEXT,
+      tender_id TEXT,
+      bid_id TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS bids (
+      id TEXT PRIMARY KEY,
+      opp_id TEXT,
+      tender_id TEXT,
+      client TEXT NOT NULL,
+      title TEXT NOT NULL,
+      est_cost REAL NOT NULL,
+      margin_pct REAL NOT NULL,
+      bid_price REAL NOT NULL,
+      tech_proposal TEXT,
+      fin_proposal TEXT,
+      internal_approval TEXT NOT NULL,
+      approval_by TEXT,
+      submission_date TEXT,
+      status TEXT NOT NULL,
+      notes TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS crm_activities (
+      id TEXT PRIMARY KEY,
+      ref_id TEXT NOT NULL,
+      ref_type TEXT NOT NULL,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      activity_date TEXT NOT NULL,
+      conducted_by TEXT,
+      client_attendees TEXT,
+      summary TEXT NOT NULL,
+      next_action TEXT,
+      next_date TEXT,
+      status TEXT NOT NULL
+    );
   `);
+
+  try { db.exec(`ALTER TABLE tenders ADD COLUMN client_id TEXT DEFAULT ''`); } catch (e) {}
+  try { db.exec(`ALTER TABLE tenders ADD COLUMN tender_fee REAL DEFAULT 0`); } catch (e) {}
+  try { db.exec(`ALTER TABLE tenders ADD COLUMN eligibility TEXT DEFAULT ''`); } catch (e) {}
+  try { db.exec(`ALTER TABLE tenders ADD COLUMN docs_checklist TEXT DEFAULT ''`); } catch (e) {}
+  try { db.exec(`ALTER TABLE tenders ADD COLUMN loss_reason TEXT DEFAULT ''`); } catch (e) {}
 }
 
 function getConfig(k, defaultVal = null) {
@@ -472,6 +564,287 @@ function createProjectRecord(f) {
   return pId;
 }
 
+function createLeadRecord(f) {
+  const today = getConfig('today', new Date().toISOString().slice(0, 10));
+  const countRow = db.prepare('SELECT COUNT(*) as c FROM leads').get();
+  const id = f.id || ('LD-' + String(countRow.c + 101));
+  db.prepare(`
+    INSERT INTO leads (id, title, client_name, contact_person, phone, email, source, est_value, location, assigned_to, status, notes, created_at, converted_client_id, converted_opp_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id, f.title, f.client_name, f.contact_person || '', f.phone || '', f.email || '',
+    f.source || 'Website Enquiry', Number(f.est_value) || 0, f.location || '',
+    f.assigned_to || 'Rajesh Sharma (BDM)', f.status || 'New', f.notes || '',
+    f.created_at || today, f.converted_client_id || '', f.converted_opp_id || ''
+  );
+  logAudit(`Lead created: ${id} - ${f.title} (${f.client_name})`);
+  return id;
+}
+
+function qualifyLeadRecord(leadId, clientData = {}, oppData = {}) {
+  const today = getConfig('today', new Date().toISOString().slice(0, 10));
+  const lead = db.prepare('SELECT * FROM leads WHERE id = ?').get(leadId);
+  if (!lead) throw new Error('Lead not found');
+
+  // Check or create client
+  let clientId = lead.converted_client_id;
+  if (!clientId) {
+    const existingClient = db.prepare('SELECT id FROM clients WHERE name = ? COLLATE NOCASE').get(clientData.name || lead.client_name);
+    if (existingClient) {
+      clientId = existingClient.id;
+    } else {
+      const clientCount = db.prepare('SELECT COUNT(*) as c FROM clients').get().c;
+      clientId = 'CL-' + String(clientCount + 101);
+      db.prepare(`
+        INSERT INTO clients (id, name, contact_person, designation, phone, email, address, city, gstin, pan, tier, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        clientId, clientData.name || lead.client_name, clientData.contact_person || lead.contact_person,
+        clientData.designation || 'Project Director', clientData.phone || lead.phone, clientData.email || lead.email,
+        clientData.address || (lead.location || 'Plot 42, Harbour Corridor'), clientData.city || 'Visakhapatnam',
+        clientData.gstin || '37AABCA1234F1Z8', clientData.pan || 'AABCA1234F', clientData.tier || 'Tier 1 Enterprise',
+        'Active', today
+      );
+      logAudit(`Client registered from lead: ${clientId} - ${lead.client_name}`);
+    }
+  }
+
+  // Create Opportunity
+  const oppCount = db.prepare('SELECT COUNT(*) as c FROM opportunities').get().c;
+  const oppId = 'OPP-' + String(oppCount + 101);
+  db.prepare(`
+    INSERT INTO opportunities (id, lead_id, client_id, client_name, title, scope, est_val, stage, win_prob, responsible_mgr, expected_close, status, converted_project_id, tender_id, bid_id, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    oppId, leadId, clientId, lead.client_name, oppData.title || lead.title,
+    oppData.scope || 'Civil, Structural RCC, MEP & Architectural Finishes',
+    Number(oppData.est_val) || lead.est_value, oppData.stage || 'Qualification',
+    Number(oppData.win_prob) || 40, oppData.responsible_mgr || lead.assigned_to,
+    oppData.expected_close || addDays(today, 30), 'Active', '', '', '', today
+  );
+
+  // Update Lead
+  db.prepare(`
+    UPDATE leads
+    SET status = 'Qualified', converted_client_id = ?, converted_opp_id = ?
+    WHERE id = ?
+  `).run(clientId, oppId, leadId);
+
+  // Log activity
+  const actId = uid();
+  db.prepare(`
+    INSERT INTO crm_activities (id, ref_id, ref_type, type, title, activity_date, conducted_by, client_attendees, summary, next_action, next_date, status)
+    VALUES (?, ?, 'lead', 'Qualification', ?, ?, ?, ?, ?, ?, ?, 'Completed')
+  `).run(
+    actId, leadId, `Lead Qualified & Converted to ${oppId}`,
+    new Date().toISOString().slice(0, 16).replace('T', ' '),
+    lead.assigned_to || 'Rajesh Sharma (BDM)', lead.contact_person || lead.client_name,
+    `Lead successfully validated: Feasibility confirmed, budget ₹${(lead.est_value/10000000).toFixed(2)} Cr verified, decision maker identified. Client record ${clientId} and Opportunity ${oppId} initialized.`,
+    'Prepare estimation & BOQ pricing', addDays(today, 5)
+  );
+
+  logAudit(`Lead ${leadId} qualified into Client ${clientId} & Opportunity ${oppId}`);
+  return { ok: true, leadId, clientId, oppId };
+}
+
+function createClientRecord(f) {
+  const today = getConfig('today', new Date().toISOString().slice(0, 10));
+  const countRow = db.prepare('SELECT COUNT(*) as c FROM clients').get();
+  const id = f.id || ('CL-' + String(countRow.c + 101));
+  db.prepare(`
+    INSERT INTO clients (id, name, contact_person, designation, phone, email, address, city, gstin, pan, tier, status, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id, f.name, f.contact_person || '', f.designation || 'Director', f.phone || '',
+    f.email || '', f.address || '', f.city || 'Visakhapatnam', f.gstin || '',
+    f.pan || '', f.tier || 'Tier 1 Enterprise', f.status || 'Active', f.created_at || today
+  );
+  logAudit(`Client created: ${id} - ${f.name}`);
+  return id;
+}
+
+function createOpportunityRecord(f) {
+  const today = getConfig('today', new Date().toISOString().slice(0, 10));
+  const countRow = db.prepare('SELECT COUNT(*) as c FROM opportunities').get();
+  const id = f.id || ('OPP-' + String(countRow.c + 101));
+  db.prepare(`
+    INSERT INTO opportunities (id, lead_id, client_id, client_name, title, scope, est_val, stage, win_prob, responsible_mgr, expected_close, status, converted_project_id, tender_id, bid_id, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id, f.lead_id || '', f.client_id || '', f.client_name, f.title,
+    f.scope || 'Civil, Structural RCC, MEP & Architectural Finishes',
+    Number(f.est_val) || 0, f.stage || 'Identification', Number(f.win_prob) || 20,
+    f.responsible_mgr || 'Rajesh Sharma (BDM)', f.expected_close || addDays(today, 30),
+    f.status || 'Active', f.converted_project_id || '', f.tender_id || '', f.bid_id || '',
+    f.created_at || today
+  );
+  logAudit(`Opportunity created: ${id} - ${f.title} (${f.client_name})`);
+  return id;
+}
+
+function createBidRecord(f) {
+  const today = getConfig('today', new Date().toISOString().slice(0, 10));
+  const countRow = db.prepare('SELECT COUNT(*) as c FROM bids').get();
+  const id = f.id || ('BID-' + String(countRow.c + 101));
+  const estCost = Number(f.est_cost) || 0;
+  const marginPct = Number(f.margin_pct) || 15;
+  const bidPrice = Number(f.bid_price) || Math.round(estCost * (1 + marginPct / 100));
+
+  db.prepare(`
+    INSERT INTO bids (id, opp_id, tender_id, client, title, est_cost, margin_pct, bid_price, tech_proposal, fin_proposal, internal_approval, approval_by, submission_date, status, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id, f.opp_id || '', f.tender_id || '', f.client, f.title,
+    estCost, marginPct, bidPrice, f.tech_proposal || '12-Stage WBS, BBS, C35 mix design, QA/QC Plan',
+    f.fin_proposal || 'Itemized BOQ with firm price clause', f.internal_approval || 'In Review',
+    f.approval_by || '', f.submission_date || addDays(today, 7), f.status || 'Draft', f.notes || ''
+  );
+
+  if (f.opp_id) {
+    db.prepare('UPDATE opportunities SET bid_id = ?, stage = ? WHERE id = ?').run(id, 'Proposal/Bid', f.opp_id);
+  }
+
+  logAudit(`Bid created: ${id} - ${f.title} (Quoted ₹${(bidPrice/10000000).toFixed(2)} Cr)`);
+  return id;
+}
+
+function approveBidRecord(bidId, approvedBy = 'Director / CEO') {
+  db.prepare(`
+    UPDATE bids
+    SET internal_approval = 'Approved by MD', approval_by = ?, status = 'Approved'
+    WHERE id = ?
+  `).run(approvedBy, bidId);
+  logAudit(`Bid approved: ${bidId} by ${approvedBy}`);
+  return true;
+}
+
+function submitBidRecord(bidId, submissionDate = null) {
+  const today = getConfig('today', new Date().toISOString().slice(0, 10));
+  const sDate = submissionDate || today;
+  db.prepare(`
+    UPDATE bids
+    SET status = 'Submitted', submission_date = ?
+    WHERE id = ?
+  `).run(sDate, bidId);
+
+  const bid = db.prepare('SELECT * FROM bids WHERE id = ?').get(bidId);
+  if (bid && bid.opp_id) {
+    db.prepare(`UPDATE opportunities SET stage = 'Negotiation', win_prob = 80 WHERE id = ?`).run(bid.opp_id);
+  }
+  if (bid && bid.tender_id) {
+    db.prepare(`UPDATE tenders SET status = 'Submitted' WHERE id = ?`).run(bid.tender_id);
+  }
+
+  logAudit(`Bid submitted to client: ${bidId} on ${sDate}`);
+  return true;
+}
+
+function recordBidResult(bidId, status, lossReason = '') {
+  db.prepare(`
+    UPDATE bids
+    SET status = ?
+    WHERE id = ?
+  `).run(status, bidId);
+
+  const bid = db.prepare('SELECT * FROM bids WHERE id = ?').get(bidId);
+  if (bid && bid.opp_id) {
+    const oppStage = status === 'Awarded' ? 'Won' : 'Lost';
+    const winProb = status === 'Awarded' ? 100 : 0;
+    db.prepare(`UPDATE opportunities SET stage = ?, win_prob = ? WHERE id = ?`).run(oppStage, winProb, bid.opp_id);
+  }
+  if (bid && bid.tender_id) {
+    db.prepare(`UPDATE tenders SET status = ?, loss_reason = ? WHERE id = ?`).run(status, lossReason || '', bid.tender_id);
+  }
+
+  logAudit(`Bid result recorded: ${bidId} -> ${status} ${lossReason ? '(' + lossReason + ')' : ''}`);
+  return true;
+}
+
+function convertOpportunityToProject(oppId, customData = {}) {
+  const opp = db.prepare('SELECT * FROM opportunities WHERE id = ?').get(oppId);
+  if (!opp) throw new Error('Opportunity not found');
+
+  let contractVal = opp.est_val;
+  if (opp.bid_id) {
+    const bid = db.prepare('SELECT * FROM bids WHERE id = ?').get(opp.bid_id);
+    if (bid && bid.bid_price) contractVal = bid.bid_price;
+  }
+  if (customData.contract) contractVal = Number(customData.contract);
+
+  const today = getConfig('today', new Date().toISOString().slice(0, 10));
+
+  const pId = createProjectRecord({
+    name: customData.name || opp.title,
+    client: customData.client || opp.client_name,
+    type: customData.type || 'Commercial',
+    city: customData.city || 'Visakhapatnam',
+    addr: customData.addr || 'Harbour Road, Port Access Corridor',
+    lat: customData.lat || 17.6868,
+    lng: customData.lng || 83.2185,
+    radius: 150,
+    area: customData.area || 4500,
+    floors: customData.floors || 8,
+    contract: contractVal,
+    start: today,
+    team: ['u2', 'u3', 'u4', 'u5', 'u6']
+  });
+
+  // Update opportunity
+  db.prepare(`
+    UPDATE opportunities
+    SET stage = 'Won', status = 'Converted', converted_project_id = ?
+    WHERE id = ?
+  `).run(pId, oppId);
+
+  // If tender linked, update tender status
+  if (opp.tender_id) {
+    db.prepare(`UPDATE tenders SET status = 'Awarded' WHERE id = ?`).run(opp.tender_id);
+  }
+
+  // If bid linked, update bid status
+  if (opp.bid_id) {
+    db.prepare(`UPDATE bids SET status = 'Awarded' WHERE id = ?`).run(opp.bid_id);
+  }
+
+  // Log CRM Activity
+  const actId = uid();
+  db.prepare(`
+    INSERT INTO crm_activities (id, ref_id, ref_type, type, title, activity_date, conducted_by, client_attendees, summary, next_action, next_date, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    actId, oppId, 'opportunity', 'Project Conversion',
+    `Converted to Active Project ${pId}`,
+    new Date().toISOString().slice(0, 16).replace('T', ' '),
+    'System / BDM',
+    opp.client_name,
+    `Successfully converted business opportunity to active enterprise project ${pId} (${customData.name || opp.title}) with ₹${(contractVal/10000000).toFixed(2)} Cr contract value and 12-stage WBS.`,
+    'Execute Mobilization & Site Setup',
+    addDays(today, 7),
+    'Completed'
+  );
+
+  logAudit(`Opportunity ${oppId} converted to Active Project ${pId} (${opp.client_name} - ₹${(contractVal/10000000).toFixed(2)} Cr)`, pId);
+  sendWA('pm', `🚀 Opportunity Converted! Project ${pId} (${opp.title}) for client ${opp.client_name} is now active with ₹${(contractVal/10000000).toFixed(2)} Cr budget and 12 WBS stages.`, { act: 'viewProject', pid: pId });
+
+  return { ok: true, projectId: pId, oppId };
+}
+
+function logCRMActivity(f) {
+  const today = getConfig('today', new Date().toISOString().slice(0, 10));
+  const id = f.id || uid();
+  db.prepare(`
+    INSERT INTO crm_activities (id, ref_id, ref_type, type, title, activity_date, conducted_by, client_attendees, summary, next_action, next_date, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id, f.ref_id, f.ref_type || 'opportunity', f.type || 'Meeting', f.title,
+    f.activity_date || (new Date().toISOString().slice(0, 16).replace('T', ' ')),
+    f.conducted_by || 'Rajesh Sharma (BDM)', f.client_attendees || '',
+    f.summary, f.next_action || '', f.next_date || addDays(today, 3), f.status || 'Completed'
+  );
+  logAudit(`CRM Activity logged: ${f.title} (${f.type})`);
+  return id;
+}
+
 function seedDatabase() {
   db.exec(`
     DELETE FROM config;
@@ -498,6 +871,11 @@ function seedDatabase() {
     DELETE FROM ncr_records;
     DELETE FROM documents_tbl;
     DELETE FROM handover_snags;
+    DELETE FROM leads;
+    DELETE FROM clients;
+    DELETE FROM opportunities;
+    DELETE FROM bids;
+    DELETE FROM crm_activities;
   `);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -705,11 +1083,189 @@ function seedDatabase() {
   db.prepare('INSERT INTO hse (project_id, d, type, desc, by_uid) VALUES (?, ?, ?, ?, ?)')
     .run('P004', addDays(today, -2), 'PPE violation', 'Two workers without helmets – counselled', 'u4');
 
-  // Tenders
-  const insertTender = db.prepare('INSERT INTO tenders (id, title, client, type, val, emd, sub_date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-  insertTender.run('T-2026-01', 'Govt Secretariat IT Tower Phase 2', 'AP CRDA', 'Commercial EPC', 145000000, 1450000, addDays(today, 25), 'Bidding', 'Technical bid pre-qualification document under review');
-  insertTender.run('T-2026-02', 'Smart City Water Distribution Network', 'GVMC Vizag', 'Infrastructure', 48000000, 480000, addDays(today, 8), 'Submitted', 'EMD submitted via Bank Guarantee. Commercial bid opens Friday');
-  insertTender.run('T-2026-03', 'Highway Flyover & Underpass Junction', 'NHAI', 'Infrastructure', 92000000, 920000, addDays(today, 15), 'Evaluation', 'L1 bidder shortlisted. Awaiting letter of intent (LOI)');
+  // CRM & Tender Module Seed
+  // 1. Leads
+  const insertLead = db.prepare(`
+    INSERT INTO leads (id, title, client_name, contact_person, phone, email, source, est_value, location, assigned_to, status, notes, created_at, converted_client_id, converted_opp_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  insertLead.run(
+    'LD-101', 'Commercial Complex G+8 Harbour Road', 'ABC Infrastructure Pvt. Ltd.',
+    'Mr. Vikram Adani (Director - Projects)', '+91 98490 12345', 'vadani@abcinfra.com',
+    'Direct Enquiry', 50000000, 'Visakhapatnam, Andhra Pradesh', 'Rajesh Sharma (BDM)',
+    'Qualified', 'Turnkey Civil + Structural + MEP package. Client budget ₹5.00 Cr verified. Technical drawings submitted.',
+    addDays(today, -30), 'CL-101', 'OPP-101'
+  );
+  insertLead.run(
+    'LD-102', 'Luxury Waterfront Villas (12 Units)', 'Marina Coastal Living',
+    'Mr. P. Venkat Rao', '+91 94401 56789', 'pvr@marinacoastal.com',
+    'Referral', 36000000, 'Bheemili Beach Road, Vizag', 'K. Jagannath (BDM)',
+    'Contacted', 'Site visit completed. Soil investigation report received. Architectural concept drawings in progress.',
+    addDays(today, -12), '', ''
+  );
+  insertLead.run(
+    'LD-103', 'Pharma Cleanroom Production Block C', 'Hetero BioSciences Ltd.',
+    'Dr. C. N. Reddy (VP Ops)', '+91 891 2789100', 'cnreddy@heterobio.com',
+    'Industrial Trade Expo', 82000000, 'Parawada Pharma City, Vizag', 'Rajesh Sharma (BDM)',
+    'New', 'cGMP compliant heavy-duty cleanroom facility. Pre-qualification queries raised.',
+    addDays(today, -3), '', ''
+  );
+  insertLead.run(
+    'LD-104', 'Warehouse & Multimodal Logistics Hub 50,000 sqft', 'Gati-KWE Logistics',
+    'Mr. Amitav Ghosh (Head Projects)', '+91 98200 44556', 'aghosh@gatikwe.com',
+    'Website Enquiry', 24000000, 'Anakapalli Industrial Corridor', 'K. Jagannath (BDM)',
+    'Contacted', 'Pre-engineered steel building (PEB) design with laser-screed FM2 concrete floor.',
+    addDays(today, -7), '', ''
+  );
+
+  // 2. Clients
+  const insertClient = db.prepare(`
+    INSERT INTO clients (id, name, contact_person, designation, phone, email, address, city, gstin, pan, tier, status, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  insertClient.run(
+    'CL-101', 'ABC Infrastructure Pvt. Ltd.', 'Mr. Vikram Adani', 'Director (Projects & Infrastructure)',
+    '+91 98490 12345', 'vadani@abcinfra.com', 'Plot 42, Port Access Corridor, Harbour Road',
+    'Visakhapatnam', '37AABCA1234F1Z8', 'AABCA1234F', 'Tier 1 Enterprise', 'Active', addDays(today, -28)
+  );
+  insertClient.run(
+    'CL-102', 'AP CRDA Amaravati', 'Superintending Engineer (Buildings)', 'Chief Authority',
+    '+91 866 2424100', 'se.buildings@apcrda.gov.in', 'CRDA Headquarters, Lenin Center, Governorpet',
+    'Vijayawada', '37AAAGA0001E1ZU', 'AAAGA0001E', 'Government PSU', 'Active', addDays(today, -90)
+  );
+  insertClient.run(
+    'CL-103', 'Sri Constructions & Developers', 'Mr. R. Chowdary', 'Managing Director',
+    '+91 891 2541234', 'info@sriconstructions.com', 'MVP Colony, Sector 4',
+    'Visakhapatnam', '37AABCS5678K1Z2', 'AABCS5678K', 'Tier 2 Commercial', 'Active', addDays(today, -150)
+  );
+  insertClient.run(
+    'CL-104', 'Skyline Developers LLP', 'Mr. K. Varma', 'Partner',
+    '+91 98480 99887', 'varma@skylinedev.in', 'Road No. 10, Banjara Hills',
+    'Hyderabad', '36AABFS9999M1ZQ', 'AABFS9999M', 'Tier 1 Enterprise', 'Active', addDays(today, -200)
+  );
+
+  // 3. Tenders
+  const insertTender = db.prepare(`
+    INSERT INTO tenders (id, title, client, client_id, type, val, emd, tender_fee, sub_date, eligibility, docs_checklist, status, loss_reason, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  insertTender.run(
+    'T-2026-04', 'Visakhapatnam Port Commercial Complex G+8', 'ABC Infrastructure Pvt. Ltd.', 'CL-101',
+    'Commercial EPC', 50000000, 1000000, 25000, addDays(today, -5),
+    'Eligible - Meets turnover & tech criteria',
+    'Audited Balance Sheets (3 yrs), EMD Bank Guarantee ₹10L, Solvency Cert (₹10 Cr), Tech Credentials for G+8',
+    'Awarded', '', 'Tender officially awarded to Siyantech Global at ₹4.85 Cr after commercial negotiations. Letter of Award (LoA) issued.'
+  );
+  insertTender.run(
+    'T-2026-01', 'Govt Secretariat IT Tower Phase 2', 'AP CRDA Amaravati', 'CL-102',
+    'Commercial EPC', 145000000, 1450000, 50000, addDays(today, 25),
+    'Eligible - Joint Venture / EPC Consortium',
+    'Prequalification documents, JV Agreement, Financial capability certificate, Past 5-year works',
+    'Bidding', '', 'Technical bid pre-qualification document under review. BOQ estimation underway.'
+  );
+  insertTender.run(
+    'T-2026-02', 'Smart City Water Distribution Network', 'GVMC Vizag', 'CL-103',
+    'Infrastructure', 48000000, 480000, 15000, addDays(today, 8),
+    'Eligible - Direct Class-1 Civil Contractor',
+    'EMD BG ₹4.8L, ISO 9001, Past Pipeline Execution Cert',
+    'Submitted', '', 'EMD submitted via Bank Guarantee. Commercial bid opening scheduled for Friday.'
+  );
+  insertTender.run(
+    'T-2026-03', 'Highway Flyover & Underpass Junction', 'NHAI', '',
+    'Infrastructure', 92000000, 920000, 30000, addDays(today, -15),
+    'Eligible',
+    'Highway credentials, machinery ownership proofs, audited reports',
+    'Lost', 'Price difference - L1 bidder quoted 7.2% below our cost estimate',
+    'Debrief complete: L1 quoted aggressive prices on steel reinforcement.'
+  );
+
+  // 4. Opportunities
+  const insertOpp = db.prepare(`
+    INSERT INTO opportunities (id, lead_id, client_id, client_name, title, scope, est_val, stage, win_prob, responsible_mgr, expected_close, status, converted_project_id, tender_id, bid_id, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  insertOpp.run(
+    'OPP-101', 'LD-101', 'CL-101', 'ABC Infrastructure Pvt. Ltd.', 'ABC Commercial Hub Construction (G+8)',
+    'Turnkey Civil, Structural RCC, MEP & Architectural Finishes for 4,500 sq.m G+8 office tower',
+    50000000, 'Won', 100, 'Rajesh Sharma (BDM)', addDays(today, -2), 'Won', '',
+    'T-2026-04', 'BID-101', addDays(today, -25)
+  );
+  insertOpp.run(
+    'OPP-102', 'LD-102', '', 'Marina Coastal Living', 'Bheemili Waterfront Luxury Villas',
+    'G+2 Villas Civil Structure, Swimming Pools, Landscaping',
+    36000000, 'Proposal/Bid', 70, 'K. Jagannath (BDM)', addDays(today, 18), 'Active', '',
+    '', 'BID-102', addDays(today, -10)
+  );
+  insertOpp.run(
+    'OPP-103', 'LD-103', '', 'Hetero BioSciences Ltd.', 'Cleanroom Production Block C',
+    'Industrial RCC Superstructure, Cleanroom Partitioning, HVAC Ducting',
+    82000000, 'Qualification', 45, 'Rajesh Sharma (BDM)', addDays(today, 45), 'Active', '',
+    '', '', addDays(today, -2)
+  );
+
+  // 5. Bids
+  const insertBid = db.prepare(`
+    INSERT INTO bids (id, opp_id, tender_id, client, title, est_cost, margin_pct, bid_price, tech_proposal, fin_proposal, internal_approval, approval_by, submission_date, status, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  insertBid.run(
+    'BID-101', 'OPP-101', 'T-2026-04', 'ABC Infrastructure Pvt. Ltd.',
+    'Commercial Building G+8 Turnkey Civil & MEP', 41200000, 17.7, 48500000,
+    'Full 12-stage WBS, Bar Bending Schedule, C35/40 High-grade mix design, 3D BIM coordination, HSE & Quality protocols',
+    'Itemized BOQ with firm price clause for 12 months, 10% mobilization advance against BG, 5% retention',
+    'Approved by MD', 'Director / CEO', addDays(today, -10), 'Awarded',
+    'Submitted bid ₹4.92 Cr revised to ₹4.85 Cr during negotiation meeting. Tender awarded to Siyantech.'
+  );
+  insertBid.run(
+    'BID-102', 'OPP-102', '', 'Marina Coastal Living',
+    '12 Waterfront Villas Turnkey Works', 29800000, 18.1, 35200000,
+    'Coastal grade anti-corrosion concrete treatment, VRV air conditioning, swimming pool waterproofing',
+    'Stage-wise milestone payments based on slab completion',
+    'Approved by MD', 'Director / CEO', addDays(today, -2), 'Submitted',
+    'Presented to client steering committee. Client requested 5-day evaluation window.'
+  );
+  insertBid.run(
+    'BID-103', '', 'T-2026-01', 'AP CRDA Amaravati',
+    'Govt Secretariat IT Tower Phase 2', 124000000, 14.5, 142000000,
+    'High-rise jump-form shuttering methodology, green building GRIHA-4 compliance',
+    'Standard Govt CPWD item rate contract with quarterly price escalation formula',
+    'In Review', 'Pending Board Review', addDays(today, 20), 'Draft',
+    'BOQ pricing 80% finalized. Bar bending schedules under review by Engineering team.'
+  );
+
+  // 6. CRM Activities
+  const insertAct = db.prepare(`
+    INSERT INTO crm_activities (id, ref_id, ref_type, type, title, activity_date, conducted_by, client_attendees, summary, next_action, next_date, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  insertAct.run(
+    'ACT-101', 'OPP-101', 'opportunity', 'Negotiation', 'Commercial Price Finalization & Contract Scope Signoff',
+    addDays(today, -3) + ' 14:30', 'Rajesh Sharma (BDM) & Suresh Nair (VP Projects)',
+    'Mr. Vikram Adani (Director) & Chief Financial Officer',
+    'Finalized contract price at ₹4.85 Cr (revised from ₹4.92 Cr). ABC Infra confirmed 10% mobilization advance against Bank Guarantee. Letter of Award (LoA) officially handed over!',
+    'Initiate 1-Click Project Conversion and mobilize site engineer team', today, 'Completed'
+  );
+  insertAct.run(
+    'ACT-102', 'OPP-101', 'opportunity', 'Meeting', 'Technical Proposal Presentation & Value Engineering',
+    addDays(today, -8) + ' 11:00', 'Rajesh Sharma & Sr. Structural Engineer',
+    'Mr. Vikram Adani & Client PM Team',
+    'Presented structural optimization for G+8 column grid, reducing steel consumption by 6% without compromising seismic load bearing capacity.',
+    'Submit revised commercial offer', addDays(today, -5), 'Completed'
+  );
+  insertAct.run(
+    'ACT-103', 'LD-102', 'lead', 'Site Visit', 'Bheemili Beach Road Topographical & Soil Inspection',
+    addDays(today, -4) + ' 10:00', 'K. Jagannath & Geotechnical Surveyor',
+    'Mr. P. Venkat Rao',
+    'Inspected soil contour and high-tide buffer zones. Client satisfied with boundary assessment and coastal setback clearance.',
+    'Submit revised architectural layout', addDays(today, 2), 'Completed'
+  );
+  insertAct.run(
+    'ACT-104', 'OPP-103', 'opportunity', 'Phone Call', 'Pre-RFP Clarification with Hetero Bio Engineering Dept',
+    addDays(today, -1) + ' 16:00', 'Rajesh Sharma',
+    'Dr. C. N. Reddy',
+    'Discussed pharma cleanroom HVAC specifications, HEPA filtration levels and AHU ducting loads for Block C.',
+    'Prepare pre-qualification docket', addDays(today, 4), 'Scheduled'
+  );
 
   // Drawings
   const insertDwg = db.prepare('INSERT INTO drawings (id, project_id, dwg_no, title, disc, rev, status, d) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
@@ -907,6 +1463,11 @@ function getFullState() {
   const ncrs = db.prepare('SELECT * FROM ncr_records ORDER BY rowid DESC').all();
   const documents = db.prepare('SELECT * FROM documents_tbl ORDER BY rowid ASC').all();
   const snags = db.prepare('SELECT * FROM handover_snags ORDER BY rowid ASC').all();
+  const leads = db.prepare('SELECT * FROM leads ORDER BY rowid ASC').all();
+  const clients = db.prepare('SELECT * FROM clients ORDER BY rowid ASC').all();
+  const opportunities = db.prepare('SELECT * FROM opportunities ORDER BY rowid ASC').all();
+  const bids = db.prepare('SELECT * FROM bids ORDER BY rowid ASC').all();
+  const crmActivities = db.prepare('SELECT * FROM crm_activities ORDER BY rowid DESC').all();
 
   return {
     today,
@@ -934,7 +1495,12 @@ function getFullState() {
     contracts,
     ncrs,
     documents,
-    snags
+    snags,
+    leads,
+    clients,
+    opportunities,
+    bids,
+    crmActivities
   };
 }
 
@@ -943,7 +1509,14 @@ initSchema();
 const projCount = db.prepare('SELECT COUNT(*) as c FROM projects').get().c;
 const tenderCount = db.prepare('SELECT COUNT(*) as c FROM tenders').get().c;
 const docCount = db.prepare('SELECT COUNT(*) as c FROM documents_tbl').get().c;
-if (projCount === 0 || tenderCount === 0 || docCount === 0) {
+let leadCount = 0;
+try {
+  leadCount = db.prepare('SELECT COUNT(*) as c FROM leads').get().c;
+} catch (e) {
+  leadCount = 0;
+}
+
+if (projCount === 0 || tenderCount === 0 || docCount === 0 || leadCount === 0) {
   seedDatabase();
 }
 
@@ -957,6 +1530,16 @@ module.exports = {
   logAudit,
   sendWA,
   createProjectRecord,
+  createLeadRecord,
+  qualifyLeadRecord,
+  createClientRecord,
+  createOpportunityRecord,
+  createBidRecord,
+  approveBidRecord,
+  submitBidRecord,
+  recordBidResult,
+  convertOpportunityToProject,
+  logCRMActivity,
   uid,
   addDays,
   MATS,

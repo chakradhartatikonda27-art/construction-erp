@@ -112,7 +112,8 @@ function checkPerm(res, action) {
     drawings: ['pm', 'eng', 'qa'],
     tenders: ['pm'],
     equipment: ['pm', 'sup'],
-    documents: ['pm', 'eng', 'qa', 'acc', 'store']
+    documents: ['pm', 'eng', 'qa', 'acc', 'store'],
+    crm: ['pm']
   };
   const allowed = PERM_ROLES[action] || [];
   if (!allowed.includes(role)) {
@@ -646,15 +647,109 @@ async function requestHandler(req, res) {
         return sendJSON(res, { ok: true, state: dbLayer.getFullState() });
       }
 
-      // 25b. Tender Create
+      // 25b. Tender Create & Status
       if (pathname === '/api/tenders' && req.method === 'POST') {
         if (!checkPerm(res, 'tenders')) return;
         const b = await parseJSON(req);
-        const tId = 'T-' + Math.floor(1000 + Math.random() * 9000);
-        dbLayer.db.prepare('INSERT INTO tenders (id, title, client, type, val, emd, sub_date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-          .run(tId, b.title, b.client, b.type || 'Commercial EPC', b.val || 0, b.emd || 0, b.sub_date, b.status || 'Bidding', b.notes || '');
-        dbLayer.logAudit(`Tender created: ${b.title}`);
+        const count = dbLayer.db.prepare('SELECT COUNT(*) as c FROM tenders').get().c;
+        const tId = b.id || ('T-' + new Date().getFullYear() + '-' + String(count + 1).padStart(2, '0'));
+        dbLayer.db.prepare(`
+          INSERT INTO tenders (id, title, client, client_id, type, val, emd, tender_fee, sub_date, eligibility, docs_checklist, status, loss_reason, notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          tId, b.title, b.client, b.client_id || '', b.type || 'Commercial EPC',
+          b.val || 0, b.emd || 0, b.tender_fee || 0, b.sub_date || '',
+          b.eligibility || 'Eligible', b.docs_checklist || '', b.status || 'Bidding',
+          b.loss_reason || '', b.notes || ''
+        );
+        dbLayer.logAudit(`Tender registered: ${tId} - ${b.title}`);
         return sendJSON(res, { ok: true, id: tId, state: dbLayer.getFullState() });
+      }
+
+      if (pathname === '/api/tenders/status' && req.method === 'POST') {
+        if (!checkPerm(res, 'tenders')) return;
+        const b = await parseJSON(req);
+        dbLayer.db.prepare(`
+          UPDATE tenders SET status = ?, loss_reason = ? WHERE id = ?
+        `).run(b.status, b.loss_reason || '', b.id);
+        dbLayer.logAudit(`Tender ${b.id} status updated to ${b.status}`);
+        return sendJSON(res, { ok: true, state: dbLayer.getFullState() });
+      }
+
+      // CRM: Leads
+      if (pathname === '/api/crm/leads' && req.method === 'POST') {
+        if (!checkPerm(res, 'crm')) return;
+        const b = await parseJSON(req);
+        const leadId = dbLayer.createLeadRecord(b);
+        return sendJSON(res, { ok: true, id: leadId, state: dbLayer.getFullState() });
+      }
+
+      if (pathname === '/api/crm/leads/qualify' && req.method === 'POST') {
+        if (!checkPerm(res, 'crm')) return;
+        const b = await parseJSON(req);
+        const result = dbLayer.qualifyLeadRecord(b.leadId, b.clientData, b.oppData);
+        return sendJSON(res, { ok: true, result, state: dbLayer.getFullState() });
+      }
+
+      // CRM: Clients
+      if (pathname === '/api/crm/clients' && req.method === 'POST') {
+        if (!checkPerm(res, 'crm')) return;
+        const b = await parseJSON(req);
+        const clientId = dbLayer.createClientRecord(b);
+        return sendJSON(res, { ok: true, id: clientId, state: dbLayer.getFullState() });
+      }
+
+      // CRM: Opportunities
+      if (pathname === '/api/crm/opportunities' && req.method === 'POST') {
+        if (!checkPerm(res, 'crm')) return;
+        const b = await parseJSON(req);
+        const oppId = dbLayer.createOpportunityRecord(b);
+        return sendJSON(res, { ok: true, id: oppId, state: dbLayer.getFullState() });
+      }
+
+      // CRM: Bids
+      if (pathname === '/api/crm/bids' && req.method === 'POST') {
+        if (!checkPerm(res, 'crm')) return;
+        const b = await parseJSON(req);
+        const bidId = dbLayer.createBidRecord(b);
+        return sendJSON(res, { ok: true, id: bidId, state: dbLayer.getFullState() });
+      }
+
+      if (pathname === '/api/crm/bids/approve' && req.method === 'POST') {
+        if (!checkPerm(res, 'crm')) return;
+        const b = await parseJSON(req);
+        dbLayer.approveBidRecord(b.id, b.approvedBy);
+        return sendJSON(res, { ok: true, state: dbLayer.getFullState() });
+      }
+
+      if (pathname === '/api/crm/bids/submit' && req.method === 'POST') {
+        if (!checkPerm(res, 'crm')) return;
+        const b = await parseJSON(req);
+        dbLayer.submitBidRecord(b.id, b.submissionDate);
+        return sendJSON(res, { ok: true, state: dbLayer.getFullState() });
+      }
+
+      if (pathname === '/api/crm/bids/result' && req.method === 'POST') {
+        if (!checkPerm(res, 'crm')) return;
+        const b = await parseJSON(req);
+        dbLayer.recordBidResult(b.id, b.status, b.lossReason);
+        return sendJSON(res, { ok: true, state: dbLayer.getFullState() });
+      }
+
+      // CRM: Flagship Conversion to Active Project
+      if (pathname === '/api/crm/convert-to-project' && req.method === 'POST') {
+        if (!checkPerm(res, 'createProject')) return;
+        const b = await parseJSON(req);
+        const result = dbLayer.convertOpportunityToProject(b.oppId, b.customData || {});
+        return sendJSON(res, { ok: true, result, state: dbLayer.getFullState() });
+      }
+
+      // CRM: Activities & Follow-ups
+      if (pathname === '/api/crm/activities' && req.method === 'POST') {
+        if (!checkPerm(res, 'crm')) return;
+        const b = await parseJSON(req);
+        const actId = dbLayer.logCRMActivity(b);
+        return sendJSON(res, { ok: true, id: actId, state: dbLayer.getFullState() });
       }
 
       // 25c. Drawing Upload

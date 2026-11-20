@@ -358,6 +358,11 @@ let S={
   ncrs:[],
   documents:[],
   snags:[],
+  leads:[],
+  clients:[],
+  opportunities:[],
+  bids:[],
+  crmActivities:[],
   showAllModules: false
 };
 
@@ -709,117 +714,717 @@ V.dash=()=>{
    MODULE 2: CRM & TENDERS
    ============================================================== */
 V.crm=()=>{
-  const tab = getTab('crm', 'tenders');
-  const p = P();
-  const uList = units(p);
+  const tab = getTab('crm', 'overview');
+  const leads = S.leads || [];
+  const clients = S.clients || [];
   const tenders = S.tenders || [];
+  const bids = S.bids || [];
+  const opps = S.opportunities || [];
+  const acts = S.crmActivities || [];
+
+  const qualifiedLeads = leads.filter(l => l.status === 'Qualified' || l.status === 'Converted');
+  const totalTenderVal = tenders.reduce((a, t) => a + (Number(t.val) || 0), 0);
+  const totalEMD = tenders.reduce((a, t) => a + (Number(t.emd) || 0), 0);
+  const totalBidVal = bids.reduce((a, b) => a + (Number(b.bid_price) || 0), 0);
+  const totalOppVal = opps.reduce((a, o) => a + (Number(o.est_val) || 0), 0);
+  const abcOpp = opps.find(o => o.client_name.includes('ABC') || o.title.includes('ABC')) || opps[0];
 
   return `
   ${tabNav('crm', [
-    ['tenders','Active Tenders & Bids'],
-    ['leads','Leads & Clients'],
-    ['units','Property Sales / Units'],
-    ['quotations','Quotations & Estimates']
+    ['overview', 'Dashboard & Overview'],
+    ['leads', '1. Lead Management (${leads.length})'],
+    ['clients', '2. Client Management (${clients.length})'],
+    ['tenders', '3. Tender Management (${tenders.length})'],
+    ['bids', '4. Bid & Quotation (${bids.length})'],
+    ['opps', '5. Opportunities & Follow-ups (${opps.length})']
   ])}
 
-  ${tab==='tenders'?`
-    ${actionBar(`
-      <button class="btn" onclick="newTenderModal()">+ New Tender Bid</button>
-      <button class="btn sec" onclick="toast('Tender schedule exported to PDF')">Export Schedule</button>
-    `,`<span class="mut">${tenders.length} Active Tenders</span>`)}
-    <div class="card">
-      <h3>Government & Private Tenders Pipeline</h3>
-      <table>
-        <thead><tr><th>Tender ID</th><th>Tender Name / Authority</th><th>Client</th><th>Type</th><th class="num">Tender Value</th><th class="num">EMD</th><th>Submission Date</th><th>Status</th><th>Action</th></tr></thead>
-        <tbody>
-          ${tenders.map(t=>`<tr>
-            <td><b>${t.id}</b></td>
-            <td><b>${t.title}</b><br><small class="mut">${t.notes||'—'}</small></td>
-            <td>${t.client}</td>
-            <td><span class="tag t-gray">${t.type}</span></td>
-            <td class="num">${mn(t.val)}</td>
-            <td class="num">${mn(t.emd)}</td>
-            <td>${t.sub_date}</td>
-            <td>${tag(t.status)}</td>
-            <td><button class="btn sm sec" onclick="toast('Tender details opened for ${t.id}')">View Bid</button></td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>
-  `:''}
-
-  ${tab==='leads'?`
-    ${actionBar(`<button class="btn" onclick="toast('Lead capture modal')">+ Add Lead</button>`,`<input placeholder="Search clients..." style="width:180px">`)}
-    <div class="card">
-      <h3>Client & Lead Directory</h3>
-      <table>
-        <thead><tr><th>Client Organization</th><th>Key Contact</th><th>Project Category</th><th>Estimated Budget</th><th>Pipeline Stage</th><th>Probability</th></tr></thead>
-        <tbody>
-          <tr><td><b>Sri Constructions</b></td><td>Mr. R. Chowdary</td><td>Residential G+5</td><td>₹3.5 Cr</td><td><span class="tag t-ok">Awarded</span></td><td>100%</td></tr>
-          <tr><td><b>Skyline Developers</b></td><td>Mr. K. Varma</td><td>High-Rise Tower</td><td>₹26.0 Cr</td><td><span class="tag t-ok">Contract Signed</span></td><td>100%</td></tr>
-          <tr><td><b>AP CRDA Amaravati</b></td><td>SE Roads & Buildings</td><td>Govt IT Complex</td><td>₹14.5 Cr</td><td><span class="tag t-blue">Bidding</span></td><td>65%</td></tr>
-          <tr><td><b>Heights Rwanda Ltd</b></td><td>Mr. Jean-Paul M.</td><td>Commercial Complex</td><td>₹14.0 Cr</td><td><span class="tag t-ok">In Progress</span></td><td>100%</td></tr>
-        </tbody>
-      </table>
-    </div>
-  `:''}
-
-  ${tab==='units'?`
-    <div class="card">
-      <h3>Property Sales & Inventory – ${p.name}</h3>
-      <p class="mut" style="margin-bottom:10px">Click any unit to toggle status (Available → Booked → Sold):</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px">
-        ${uList.map(u=>`
-          <div class="card" style="margin:0;padding:10px;text-align:center;cursor:pointer;border:2px solid ${u.s==='Sold'?'#2f9e44':u.s==='Booked'?'#f08c00':'#e2e8f0'}" onclick="bookUnit('${p.id}','${u.n}')">
-            <b style="font-size:15px">${u.n}</b>
-            <div style="margin-top:4px">${tag(u.s)}</div>
-          </div>
-        `).join('')||'<p class="mut">No sales inventory registered for this project.</p>'}
+  ${tab === 'overview' ? `
+    <!-- KPI Summary Grid -->
+    <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:16px">
+      <div class="card" style="margin:0;border-left:4px solid #1c7ed6">
+        <small class="mut">Total Leads Captured</small>
+        <div style="font-size:22px;font-weight:700;margin:4px 0">${leads.length}</div>
+        <small style="color:#2f9e44"><b>${qualifiedLeads.length} Qualified</b> (${leads.length ? Math.round((qualifiedLeads.length/leads.length)*100) : 0}%)</small>
+      </div>
+      <div class="card" style="margin:0;border-left:4px solid #2f9e44">
+        <small class="mut">Corporate Clients</small>
+        <div style="font-size:22px;font-weight:700;margin:4px 0">${clients.length}</div>
+        <small class="mut">Enterprise & PSUs</small>
+      </div>
+      <div class="card" style="margin:0;border-left:4px solid #f08c00">
+        <small class="mut">Tender Pipeline Value</small>
+        <div style="font-size:22px;font-weight:700;margin:4px 0">${mn(totalTenderVal)}</div>
+        <small class="mut">${tenders.length} Active Tenders (EMD: ${mn(totalEMD)})</small>
+      </div>
+      <div class="card" style="margin:0;border-left:4px solid #7950f2">
+        <small class="mut">Bids & Quotations</small>
+        <div style="font-size:22px;font-weight:700;margin:4px 0">${mn(totalBidVal)}</div>
+        <small style="color:#1c7ed6"><b>${bids.filter(b=>b.internal_approval==='Approved by MD').length} Approved</b> by MD</small>
+      </div>
+      <div class="card" style="margin:0;border-left:4px solid #e8590c">
+        <small class="mut">Opportunities Pipeline</small>
+        <div style="font-size:22px;font-weight:700;margin:4px 0">${mn(totalOppVal)}</div>
+        <small style="color:#2f9e44"><b>₹4.85 Cr Won & Awarded</b></small>
       </div>
     </div>
-  `:''}
 
-  ${tab==='quotations'?`
+    <!-- Featured Case Study Card: ABC Infrastructure Pvt. Ltd. -->
+    <div class="card" style="border:2px solid #e8590c;background:linear-gradient(180deg,#fffaf6 0%,#ffffff 100%);margin-bottom:16px;padding:20px;border-radius:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span class="tag" style="background:#e8590c;color:#fff;font-weight:700;font-size:11px">⭐ REAL-WORLD CASE STUDY</span>
+            <span class="tag t-ok" style="font-weight:700">TENDER AWARDED</span>
+            <span class="tag t-blue">COMMERCIAL G+8</span>
+          </div>
+          <h2 style="font-size:18px;font-weight:700;color:#1c2430;margin:4px 0">ABC Infrastructure Pvt. Ltd. – Visakhapatnam Commercial Hub (G+8)</h2>
+          <p class="mut" style="font-size:13px">Turnkey Civil, Structural RCC, MEP & Architectural Finishes • Plot 42, Harbour Road, Visakhapatnam • Client: Mr. Vikram Adani</p>
+        </div>
+        <div style="text-align:right">
+          <small class="mut">Client Budget vs Awarded Bid</small>
+          <div style="font-size:20px;font-weight:700;color:#2f9e44">₹4.85 Cr <small style="font-size:13px;color:#6b7686;font-weight:400">(Budget: ₹5.00 Cr)</small></div>
+          <small style="color:#2f9e44"><b>Gross Margin: 17.7%</b> (Est. Cost: ₹4.12 Cr)</small>
+        </div>
+      </div>
+
+      <!-- Conversion Workflow Stepper -->
+      <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+        <small class="mut" style="text-transform:uppercase;font-weight:700;letter-spacing:0.5px">Complete CRM to Project Execution Stepper</small>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;overflow-x:auto;padding-top:10px;font-size:12px">
+          <div style="display:flex;align-items:center;gap:6px;color:#2f9e44;font-weight:600">
+            <span style="background:#e6fcf5;border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #2f9e44">✓</span>
+            1. Lead (LD-101)
+          </div>
+          <span style="color:#adb5bd">➔</span>
+          <div style="display:flex;align-items:center;gap:6px;color:#2f9e44;font-weight:600">
+            <span style="background:#e6fcf5;border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #2f9e44">✓</span>
+            2. Qualified
+          </div>
+          <span style="color:#adb5bd">➔</span>
+          <div style="display:flex;align-items:center;gap:6px;color:#2f9e44;font-weight:600">
+            <span style="background:#e6fcf5;border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #2f9e44">✓</span>
+            3. Client (CL-101)
+          </div>
+          <span style="color:#adb5bd">➔</span>
+          <div style="display:flex;align-items:center;gap:6px;color:#2f9e44;font-weight:600">
+            <span style="background:#e6fcf5;border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #2f9e44">✓</span>
+            4. Tender (T-2026-04)
+          </div>
+          <span style="color:#adb5bd">➔</span>
+          <div style="display:flex;align-items:center;gap:6px;color:#2f9e44;font-weight:600">
+            <span style="background:#e6fcf5;border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #2f9e44">✓</span>
+            5. Bid (BID-101)
+          </div>
+          <span style="color:#adb5bd">➔</span>
+          <div style="display:flex;align-items:center;gap:6px;color:#2f9e44;font-weight:600">
+            <span style="background:#e6fcf5;border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #2f9e44">✓</span>
+            6. LoA Awarded
+          </div>
+          <span style="color:#adb5bd">➔</span>
+          <div style="display:flex;align-items:center;gap:6px;color:${abcOpp && abcOpp.converted_project_id ? '#2f9e44':'#e8590c'};font-weight:700">
+            <span style="background:${abcOpp && abcOpp.converted_project_id ? '#e6fcf5':'#fff3bf'};border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid ${abcOpp && abcOpp.converted_project_id ? '#2f9e44':'#f08c00'}">${abcOpp && abcOpp.converted_project_id ? '✓':'⚡'}</span>
+            7. ${abcOpp && abcOpp.converted_project_id ? 'Active Project ('+abcOpp.converted_project_id+')' : 'Convert to Project'}
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div style="font-size:13px;color:#495057">
+          <b>Status:</b> Letter of Award (LoA) signed. Mobilization advance BG accepted. Ready for site setup.
+        </div>
+        <div>
+          ${abcOpp && abcOpp.converted_project_id ? `
+            <button class="btn ok" onclick="openProject('${abcOpp.converted_project_id}')" style="font-weight:700;padding:9px 18px">✓ Open Project ${abcOpp.converted_project_id} in Project Management →</button>
+          ` : `
+            <button class="btn ok" onclick="convertProjectModal('${abcOpp ? abcOpp.id : 'OPP-101'}')" style="font-weight:700;padding:9px 20px;font-size:13.5px">⚡ 1-Click Convert to Active Project with 12-Stage WBS</button>
+          `}
+          <button class="btn sec" onclick="viewBOQModal('BID-101')" style="margin-left:6px">View BOQ Breakdown</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5 Submodules Container (Matching User Provided UI Reference) -->
+    <div class="card" style="margin-bottom:16px;border-radius:12px;padding:20px">
+      <div style="margin-bottom:14px">
+        <h3 style="font-size:16px;font-weight:700;color:#1c2430;margin-bottom:4px">1. Module structure</h3>
+        <p class="mut" style="font-size:13px">I recommend keeping just <b>5 submodules</b> inside CRM & Tenders.</p>
+      </div>
+
+      <!-- Submodule 1 -->
+      <div class="submod-card" onclick="setTab('crm','leads')" style="border:1px solid var(--line);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;background:#fff;cursor:pointer;transition:all 0.2s">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="width:44px;height:44px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#1c2430">1. Lead Management</div>
+            <div style="font-size:13px;color:#6b7686;margin-top:2px">Capture and manage potential business opportunities.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="tag t-blue" style="font-weight:600">${leads.length} Leads</span>
+          <button class="btn sm sec">Open →</button>
+        </div>
+      </div>
+
+      <!-- Submodule 2 -->
+      <div class="submod-card" onclick="setTab('crm','clients')" style="border:1px solid var(--line);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;background:#fff;cursor:pointer;transition:all 0.2s">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="width:44px;height:44px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#1c2430">2. Client Management</div>
+            <div style="font-size:13px;color:#6b7686;margin-top:2px">Manage client companies, contacts and relationships.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="tag t-ok" style="font-weight:600">${clients.length} Clients</span>
+          <button class="btn sm sec">Open →</button>
+        </div>
+      </div>
+
+      <!-- Submodule 3 -->
+      <div class="submod-card" onclick="setTab('crm','tenders')" style="border:1px solid var(--line);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;background:#fff;cursor:pointer;transition:all 0.2s">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="width:44px;height:44px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#1c2430">3. Tender Management</div>
+            <div style="font-size:13px;color:#6b7686;margin-top:2px">Track tender notices, eligibility, deadlines and documents.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="tag t-amber" style="font-weight:600">${tenders.length} Tenders</span>
+          <button class="btn sm sec">Open →</button>
+        </div>
+      </div>
+
+      <!-- Submodule 4 -->
+      <div class="submod-card" onclick="setTab('crm','bids')" style="border:1px solid var(--line);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;background:#fff;cursor:pointer;transition:all 0.2s">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="width:44px;height:44px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#1c2430">4. Bid & Quotation Management</div>
+            <div style="font-size:13px;color:#6b7686;margin-top:2px">Prepare estimates, pricing, technical and financial bids.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="tag t-purple" style="font-weight:600">${bids.length} Bids</span>
+          <button class="btn sm sec">Open →</button>
+        </div>
+      </div>
+
+      <!-- Submodule 5 -->
+      <div class="submod-card" onclick="setTab('crm','opps')" style="border:1px solid var(--line);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;background:#fff;cursor:pointer;transition:all 0.2s">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="width:44px;height:44px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17 2 2a1 1 0 0 0 1.4 0l4.3-4.3a1 1 0 0 0 0-1.4l-2.6-2.6a1 1 0 0 0-1.4 0L13 12"/><path d="m3 14 3.7 3.7a1 1 0 0 0 1.4 0l3-3"/><path d="m14 7 3-3a1 1 0 0 1 1.4 0l2.6 2.6a1 1 0 0 1 0 1.4l-3 3"/><path d="m7 14 2-2"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#1c2430">5. Opportunity & Follow-up Management</div>
+            <div style="font-size:13px;color:#6b7686;margin-top:2px">Track meetings, calls, negotiations and winning probability.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="tag t-gray" style="font-weight:600">${opps.length} Opportunities</span>
+          <button class="btn sm sec">Open →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent CRM Activities & Follow-ups -->
     <div class="card">
-      <h3>Bids & Commercial Quotations</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="font-size:15px;margin:0">Recent Meetings, Negotiations & Scheduled Follow-ups</h3>
+        <button class="btn sm sec" onclick="logCRMActivityModal('', 'opportunity')">+ Log Activity / Meeting</button>
+      </div>
       <table>
-        <thead><tr><th>Ref No.</th><th>Client</th><th>Scope</th><th>Quoted Sum</th><th>Gross Margin</th><th>Status</th></tr></thead>
+        <thead><tr><th>Date & Time</th><th>Type</th><th>Ref / Client</th><th>Title & Summary</th><th>Conducted By</th><th>Next Action & Deadline</th><th>Status</th></tr></thead>
         <tbody>
-          <tr><td>Q-2026-88</td><td>Sri Constructions</td><td>Turnkey Civil & MEP Works</td><td>₹3.50 Cr</td><td>14.8%</td><td>${tag('Approved')}</td></tr>
-          <tr><td>Q-2026-92</td><td>Krishna Realty</td><td>Commercial Shell & Core</td><td>₹9.80 Cr</td><td>15.2%</td><td>${tag('Approved')}</td></tr>
-          <tr><td>Q-2026-95</td><td>AP CRDA</td><td>IT Complex Civil Package</td><td>₹14.50 Cr</td><td>12.5%</td><td>${tag('Submitted')}</td></tr>
+          ${acts.map(a => `
+            <tr>
+              <td><b>${a.activity_date}</b></td>
+              <td><span class="tag ${a.type==='Negotiation'?'t-ok':a.type==='Meeting'?'t-blue':a.type==='Site Visit'?'t-amber':'t-gray'}">${a.type}</span></td>
+              <td><b>${a.ref_id}</b><br><small class="mut">${a.client_attendees||'—'}</small></td>
+              <td><b>${a.title}</b><br><small class="mut">${a.summary}</small></td>
+              <td>${a.conducted_by}</td>
+              <td>${a.next_action ? `<b>${a.next_action}</b><br><small class="mut">Due: ${a.next_date||'—'}</small>` : '—'}</td>
+              <td>${tag(a.status)}</td>
+            </tr>
+          `).join('')}
         </tbody>
       </table>
     </div>
-  `:''}
+  ` : ''}
+
+  ${tab === 'leads' ? `
+    ${actionBar(`
+      <button class="btn" onclick="newLeadModal()">+ Capture New Lead</button>
+      <button class="btn sec" onclick="toast('Lead pipeline exported to CSV')">Export Leads</button>
+    `, `
+      <input placeholder="Search leads & contacts..." style="width:200px" onkeyup="filterTable(this, 1)">
+    `)}
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="font-size:15px;margin:0">1. Lead Management Pipeline</h3>
+        <span class="mut">${leads.length} Total Leads Captured</span>
+      </div>
+      <table>
+        <thead><tr><th>Lead ID</th><th>Project Title / Requirements</th><th>Client & Contact Person</th><th>Source</th><th class="num">Est. Value</th><th>Location</th><th>Assigned BDM</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>
+          ${leads.map(l => `
+            <tr>
+              <td><b>${l.id}</b></td>
+              <td><b>${l.title}</b><br><small class="mut">${l.notes||'—'}</small></td>
+              <td><b>${l.client_name}</b><br><small class="mut">${l.contact_person||''} • ${l.phone||''}</small></td>
+              <td><span class="tag t-gray">${l.source}</span></td>
+              <td class="num"><b>${mn(l.est_value)}</b></td>
+              <td>${l.location||'—'}</td>
+              <td>${l.assigned_to||'—'}</td>
+              <td>${tag(l.status)}</td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  ${l.status !== 'Converted' ? `
+                    <button class="btn sm ok" onclick="qualifyLeadModal('${l.id}')">Qualify & Convert</button>
+                  ` : `
+                    <span class="tag t-ok">Converted (${l.converted_opp_id})</span>
+                  `}
+                  <button class="btn sm sec" onclick="logCRMActivityModal('${l.id}','lead')">+ Act</button>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  ` : ''}
+
+  ${tab === 'clients' ? `
+    ${actionBar(`
+      <button class="btn" onclick="newClientModal()">+ Add Client Organization</button>
+      <button class="btn sec" onclick="toast('Client master register exported')">Export Directory</button>
+    `, `
+      <input placeholder="Search clients..." style="width:200px" onkeyup="filterTable(this, 1)">
+    `)}
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="font-size:15px;margin:0">2. Client Company Master Register</h3>
+        <span class="mut">${clients.length} Corporate Clients Registered</span>
+      </div>
+      <table>
+        <thead><tr><th>Client ID</th><th>Company Name</th><th>Key Contact Person</th><th>Phone & Email</th><th>GSTIN / PAN</th><th>Address & City</th><th>Tier Classification</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${clients.map(c => `
+            <tr>
+              <td><b>${c.id}</b></td>
+              <td><b>${c.name}</b></td>
+              <td>${c.contact_person||'—'}<br><small class="mut">${c.designation||''}</small></td>
+              <td>${c.phone||'—'}<br><small class="mut">${c.email||'—'}</small></td>
+              <td><code>${c.gstin||'—'}</code><br><small class="mut">${c.pan||'—'}</small></td>
+              <td>${c.city||'—'}<br><small class="mut">${c.address||'—'}</small></td>
+              <td><span class="tag ${c.tier.includes('Tier 1')?'t-blue':c.tier.includes('PSU')?'t-purple':'t-gray'}">${c.tier}</span></td>
+              <td>${tag(c.status)}</td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  <button class="btn sm" onclick="newOpportunityModal('${c.id}')">+ Opp</button>
+                  <button class="btn sm sec" onclick="viewClientModal('${c.id}')">Profile</button>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  ` : ''}
+
+  ${tab === 'tenders' ? `
+    ${actionBar(`
+      <button class="btn" onclick="newTenderModal()">+ Register Tender Notice</button>
+      <button class="btn sec" onclick="toast('Tender schedule exported to PDF')">Export Schedule</button>
+    `, `
+      <span class="mut">${tenders.length} Active Tenders • EMD Deployed: ${mn(totalEMD)}</span>
+    `)}
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="font-size:15px;margin:0">3. Tender Management & Tracking</h3>
+        <span class="mut">Turnkey EPC & Infrastructure Tenders</span>
+      </div>
+      <table>
+        <thead><tr><th>Tender ID</th><th>Tender Authority / Title</th><th>Client</th><th>Type</th><th class="num">Tender Value</th><th class="num">EMD / Fee</th><th>Deadline</th><th>Eligibility & Docs</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>
+          ${tenders.map(t => `
+            <tr>
+              <td><b>${t.id}</b></td>
+              <td><b>${t.title}</b><br><small class="mut">${t.notes||'—'}</small></td>
+              <td>${t.client}</td>
+              <td><span class="tag t-gray">${t.type}</span></td>
+              <td class="num"><b>${mn(t.val)}</b></td>
+              <td class="num">${mn(t.emd)}<br><small class="mut">Fee: ${mn(t.tender_fee||0)}</small></td>
+              <td><b>${t.sub_date}</b></td>
+              <td><small>${t.eligibility||'Eligible'}</small><br><small class="mut">${t.docs_checklist||'Checklist complete'}</small></td>
+              <td>
+                ${tag(t.status)}
+                ${t.status === 'Lost' && t.loss_reason ? `<br><small style="color:#e03131">(${t.loss_reason})</small>` : ''}
+              </td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  <button class="btn sm sec" onclick="updateTenderStatusModal('${t.id}')">Status</button>
+                  <button class="btn sm" onclick="newBidModal('${t.id}', '')">Bid</button>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  ` : ''}
+
+  ${tab === 'bids' ? `
+    ${actionBar(`
+      <button class="btn" onclick="newBidModal('', '')">+ Prepare New Bid / Estimate</button>
+      <button class="btn sec" onclick="toast('BOQ Itemized Pricing exported to Excel')">Export BOQ</button>
+    `, `
+      <span class="mut">${bids.length} Active Bids • Quoted Total: ${mn(totalBidVal)}</span>
+    `)}
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="font-size:15px;margin:0">4. Bid & Commercial Quotation Management</h3>
+        <span class="mut">BOQ Pricing, Margins & Submission</span>
+      </div>
+      <table>
+        <thead><tr><th>Bid ID</th><th>Project Title / Scope</th><th>Client</th><th class="num">Est. Cost</th><th class="num">Margin %</th><th class="num">Quoted Price</th><th>Technical / Financial Proposals</th><th>MD Approval</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${bids.map(b => `
+            <tr>
+              <td><b>${b.id}</b></td>
+              <td><b>${b.title}</b><br><small class="mut">${b.notes||'—'}</small></td>
+              <td>${b.client}</td>
+              <td class="num">${mn(b.est_cost)}</td>
+              <td class="num" style="color:#2f9e44"><b>${b.margin_pct}%</b></td>
+              <td class="num"><b style="font-size:14px;color:#1c7ed6">${mn(b.bid_price)}</b></td>
+              <td><small><b>Tech:</b> ${b.tech_proposal ? b.tech_proposal.slice(0, 40) + '...' : 'WBS submitted'}</small><br><small class="mut"><b>Fin:</b> ${b.fin_proposal ? b.fin_proposal.slice(0, 40) + '...' : 'Itemized BOQ'}</small></td>
+              <td>${tag(b.internal_approval)}</td>
+              <td>${tag(b.status)}</td>
+              <td>
+                <div style="display:flex;gap:4px;flex-wrap:wrap">
+                  ${b.internal_approval !== 'Approved by MD' ? `
+                    <button class="btn sm ok" onclick="approveBidAction('${b.id}')">Approve MD</button>
+                  ` : b.status === 'Approved' ? `
+                    <button class="btn sm" onclick="submitBidAction('${b.id}')">Submit</button>
+                  ` : b.status === 'Submitted' ? `
+                    <button class="btn sm ok" onclick="recordBidResultModal('${b.id}')">Result</button>
+                  ` : ''}
+                  <button class="btn sm sec" onclick="viewBOQModal('${b.id}')">BOQ</button>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  ` : ''}
+
+  ${tab === 'opps' ? `
+    ${actionBar(`
+      <button class="btn" onclick="newOpportunityModal('')">+ New Construction Opportunity</button>
+      <button class="btn sec" onclick="logCRMActivityModal('', 'opportunity')">+ Log Meeting / Follow-up</button>
+    `, `
+      <span class="mut">${opps.length} Opportunities • Pipeline: ${mn(totalOppVal)}</span>
+    `)}
+    
+    <!-- Stage Stepper -->
+    <div class="card" style="margin-bottom:14px;padding:12px 18px">
+      <small class="mut" style="text-transform:uppercase;font-weight:700">Pipeline Stages & Win Probability</small>
+      <div style="display:flex;gap:12px;margin-top:8px;font-size:12px;flex-wrap:wrap">
+        <span class="tag t-gray">Identification (20%)</span> ➔
+        <span class="tag t-blue">Qualification (40%)</span> ➔
+        <span class="tag t-purple">Proposal / Bid (70%)</span> ➔
+        <span class="tag t-amber">Negotiation (90%)</span> ➔
+        <span class="tag t-ok">Won / Awarded (100%)</span> ➔
+        <span class="tag" style="background:#2f9e44;color:#fff;font-weight:700">🚀 Convert to Project</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="font-size:15px;margin:0">5. Opportunity & Pipeline Management</h3>
+        <span class="mut">Tracking Negotiation, Probability & Project Conversion</span>
+      </div>
+      <table>
+        <thead><tr><th>Opp ID</th><th>Opportunity Title & Scope</th><th>Client Name</th><th class="num">Est. Value</th><th>Pipeline Stage</th><th>Win Prob.</th><th>Manager</th><th>Expected Close</th><th>Project Conversion</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${opps.map(o => `
+            <tr>
+              <td><b>${o.id}</b></td>
+              <td><b>${o.title}</b><br><small class="mut">${o.scope||'—'}</small></td>
+              <td><b>${o.client_name}</b></td>
+              <td class="num"><b>${mn(o.est_val)}</b></td>
+              <td><span class="tag ${o.stage==='Won'?'t-ok':o.stage==='Negotiation'?'t-amber':o.stage==='Proposal/Bid'?'t-purple':'t-blue'}">${o.stage}</span></td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <div style="background:#e9ecef;border-radius:4px;height:8px;width:55px;overflow:hidden">
+                    <div style="background:${o.win_prob>=80?'#2f9e44':o.win_prob>=50?'#1c7ed6':'#f08c00'};width:${o.win_prob}%;height:100%"></div>
+                  </div>
+                  <b>${o.win_prob}%</b>
+                </div>
+              </td>
+              <td>${o.responsible_mgr||'—'}</td>
+              <td>${o.expected_close||'—'}</td>
+              <td>
+                ${o.converted_project_id ? `
+                  <span class="tag t-ok" style="font-weight:700">✓ ${o.converted_project_id}</span>
+                  <button class="btn sm sec" onclick="openProject('${o.converted_project_id}')" style="margin-left:4px">View →</button>
+                ` : o.stage === 'Won' || o.win_prob === 100 ? `
+                  <button class="btn sm ok" onclick="convertProjectModal('${o.id}')" style="font-weight:700">⚡ Convert to Project</button>
+                ` : `
+                  <span class="mut" style="font-size:11.5px">Pending Won status</span>
+                `}
+              </td>
+              <td>
+                <button class="btn sm sec" onclick="logCRMActivityModal('${o.id}','opportunity')">+ Follow-up</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  ` : ''}
 `;
 };
 
-async function bookUnit(pid, unitNum){
-  const res = await api('/api/crm/unit/book', { projectId: pid, unitNum });
+/* ==============================================================
+   CRM & TENDER MODALS & WORKFLOW LOGIC
+   ============================================================== */
+
+function openProject(pid){
+  S.ap = pid;
+  S.v = 'proj';
+  setTab('proj', 'list');
+  render();
+  toast('Switched to active enterprise project ' + pid);
+}
+
+function newLeadModal(){
+  modal(`
+    <h2>1. Capture New Lead / Project Opportunity</h2>
+    <div class="f">
+      <label>Project Title / Inquiry<input id="ld1" value="Commercial Hub Complex G+8"></label>
+      <div class="f2">
+        <label>Client Organization Name<input id="ld2" value="ABC Infrastructure Pvt. Ltd."></label>
+        <label>Contact Person<input id="ld3" value="Mr. Vikram Adani"></label>
+      </div>
+      <div class="f2">
+        <label>Phone Number<input id="ld4" value="+91 98490 12345"></label>
+        <label>Email Address<input id="ld5" value="vadani@abcinfra.com"></label>
+      </div>
+      <div class="f2">
+        <label>Lead Source<select id="ld6">
+          <option>Direct Enquiry</option>
+          <option>Referral</option>
+          <option>Industrial Trade Expo</option>
+          <option>Website Enquiry</option>
+          <option>Government Notice</option>
+        </select></label>
+        <label>Estimated Value (₹)<input id="ld7" type="number" value="50000000"></label>
+      </div>
+      <div class="f2">
+        <label>Project Location / City<input id="ld8" value="Harbour Road, Visakhapatnam"></label>
+        <label>Assigned BDM / Manager<input id="ld9" value="Rajesh Sharma (BDM)"></label>
+      </div>
+      <label>Client Requirements & Notes<textarea id="ld10" rows="2" placeholder="Civil, Structural RCC, MEP & Finishes requirements...">Turnkey Civil + Structural + MEP package. Client budget ₹5.00 Cr approved.</textarea></label>
+    </div>
+    <div style="text-align:right">
+      <button class="btn sec" onclick="closeM()">Cancel</button>
+      <button class="btn" onclick="saveLead()">Capture Lead</button>
+    </div>
+  `);
+}
+
+async function saveLead(){
+  const title = $('#ld1').value.trim();
+  const client_name = $('#ld2').value.trim();
+  if(!title || !client_name) return toast('Please enter project title and client name');
+  const body = {
+    title,
+    client_name,
+    contact_person: $('#ld3').value,
+    phone: $('#ld4').value,
+    email: $('#ld5').value,
+    source: $('#ld6').value,
+    est_value: +$('#ld7').value || 0,
+    location: $('#ld8').value,
+    assigned_to: $('#ld9').value,
+    notes: $('#ld10').value,
+    status: 'New'
+  };
+  closeM();
+  const res = await api('/api/crm/leads', body);
   if(res && res.ok){
-    toast(`Unit ${unitNum} updated to ${res.nextStatus}`);
+    toast('Lead captured successfully: ' + res.id);
   }
+}
+
+function qualifyLeadModal(leadId){
+  const l = (S.leads||[]).find(x => x.id === leadId);
+  if(!l) return toast('Lead not found');
+  modal(`
+    <h2>2. Qualify Lead & Convert to Client + Opportunity</h2>
+    <p class="mut" style="margin-bottom:12px">Validating lead <b>${l.id}</b> – ${l.title}</p>
+    <div class="f">
+      <div style="background:#f8f9fa;padding:10px 14px;border-radius:8px;border:1px solid var(--line);margin-bottom:10px">
+        <div><b>Client:</b> ${l.client_name} • <b>Budget:</b> ${mn(l.est_value)}</div>
+        <div class="mut" style="font-size:12.5px;margin-top:2px">Location: ${l.location||'Visakhapatnam'} • Source: ${l.source}</div>
+      </div>
+      <div class="f2">
+        <label>Technical Feasibility Verified?
+          <select id="ql1"><option>Yes - Scope matches our civil/MEP capability</option><option>Requires JV partner</option></select>
+        </label>
+        <label>Client Budget Status
+          <select id="ql2"><option>Confirmed & Board Approved</option><option>Tentative Budget</option></select>
+        </label>
+      </div>
+      <div class="f2">
+        <label>Client Designation<input id="ql3" value="Director (Projects)"></label>
+        <label>Client Tier Rating<select id="ql4"><option>Tier 1 Enterprise</option><option>Tier 2 Commercial</option><option>Government PSU</option></select></label>
+      </div>
+      <div class="f2">
+        <label>Initial Win Probability (%)<input id="ql5" type="number" value="40"></label>
+        <label>Opportunity Pipeline Stage<select id="ql6"><option>Qualification</option><option>Proposal/Bid</option></select></label>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <button class="btn sec" onclick="closeM()">Cancel</button>
+      <button class="btn ok" onclick="submitQualifyLead('${leadId}')">✓ Qualify & Create Client Record</button>
+    </div>
+  `);
+}
+
+async function submitQualifyLead(leadId){
+  const l = (S.leads||[]).find(x => x.id === leadId);
+  const body = {
+    leadId,
+    clientData: {
+      name: l ? l.client_name : '',
+      contact_person: l ? l.contact_person : '',
+      designation: $('#ql3').value,
+      phone: l ? l.phone : '',
+      email: l ? l.email : '',
+      address: l ? l.location : '',
+      tier: $('#ql4').value
+    },
+    oppData: {
+      title: l ? l.title : 'Commercial Hub Construction',
+      scope: l ? l.notes : 'Turnkey Civil & Structural',
+      est_val: l ? l.est_value : 50000000,
+      stage: $('#ql6').value,
+      win_prob: +$('#ql5').value || 40,
+      responsible_mgr: l ? l.assigned_to : 'Rajesh Sharma (BDM)'
+    }
+  };
+  closeM();
+  const res = await api('/api/crm/leads/qualify', body);
+  if(res && res.ok){
+    toast('Lead qualified! Client ' + res.result.clientId + ' & Opportunity ' + res.result.oppId + ' created.');
+  }
+}
+
+function newClientModal(){
+  modal(`
+    <h2>2. Register Client Organization</h2>
+    <div class="f">
+      <label>Company / Organization Name<input id="cl1" value="ABC Infrastructure Pvt. Ltd."></label>
+      <div class="f2">
+        <label>Primary Contact Person<input id="cl2" value="Mr. Vikram Adani"></label>
+        <label>Designation<input id="cl3" value="Director (Projects & Infrastructure)"></label>
+      </div>
+      <div class="f2">
+        <label>Contact Phone<input id="cl4" value="+91 98490 12345"></label>
+        <label>Contact Email<input id="cl5" value="vadani@abcinfra.com"></label>
+      </div>
+      <div class="f2">
+        <label>GSTIN Number<input id="cl6" value="37AABCA1234F1Z8"></label>
+        <label>PAN Number<input id="cl7" value="AABCA1234F"></label>
+      </div>
+      <div class="f2">
+        <label>City<input id="cl8" value="Visakhapatnam"></label>
+        <label>Client Tier<select id="cl9"><option>Tier 1 Enterprise</option><option>Tier 2 Commercial</option><option>Government PSU</option></select></label>
+      </div>
+      <label>Registered Office Address<input id="cl10" value="Plot 42, Port Access Corridor, Harbour Road"></label>
+    </div>
+    <div style="text-align:right">
+      <button class="btn sec" onclick="closeM()">Cancel</button>
+      <button class="btn" onclick="saveClient()">Save Client</button>
+    </div>
+  `);
+}
+
+async function saveClient(){
+  const name = $('#cl1').value.trim();
+  if(!name) return toast('Please enter company name');
+  const body = {
+    name,
+    contact_person: $('#cl2').value,
+    designation: $('#cl3').value,
+    phone: $('#cl4').value,
+    email: $('#cl5').value,
+    gstin: $('#cl6').value,
+    pan: $('#cl7').value,
+    city: $('#cl8').value,
+    tier: $('#cl9').value,
+    address: $('#cl10').value,
+    status: 'Active'
+  };
+  closeM();
+  const res = await api('/api/crm/clients', body);
+  if(res && res.ok){
+    toast('Client created: ' + res.id);
+  }
+}
+
+function viewClientModal(cid){
+  const c = (S.clients||[]).find(x => x.id === cid);
+  if(!c) return;
+  modal(`
+    <h2>Client Company Profile – ${c.name}</h2>
+    <div style="margin:12px 0;line-height:1.7">
+      <div><b>Client ID:</b> ${c.id}</div>
+      <div><b>Primary Contact:</b> ${c.contact_person} (${c.designation})</div>
+      <div><b>Phone / Email:</b> ${c.phone} • ${c.email}</div>
+      <div><b>GSTIN / PAN:</b> <code>${c.gstin}</code> / <code>${c.pan}</code></div>
+      <div><b>Address:</b> ${c.address}, ${c.city}</div>
+      <div><b>Classification:</b> <span class="tag t-blue">${c.tier}</span> • ${tag(c.status)}</div>
+    </div>
+    <div style="text-align:right">
+      <button class="btn" onclick="closeM()">Close</button>
+    </div>
+  `);
 }
 
 function newTenderModal(){
   modal(`
-    <h2>New Tender / Bid Registration</h2>
+    <h2>3. Register Tender Notice</h2>
     <div class="f">
-      <label>Tender Title<input id="t1" value="Flyover & Junction Improvement"></label>
+      <label>Tender Title / Notice<input id="t1" value="Visakhapatnam Port Commercial Complex G+8"></label>
       <div class="f2">
-        <label>Client Authority<input id="t2" value="NHAI Vizag"></label>
-        <label>Category<select id="t3"><option>Commercial EPC</option><option>Infrastructure</option><option>Residential</option></select></label>
+        <label>Client Authority<input id="t2" value="ABC Infrastructure Pvt. Ltd."></label>
+        <label>Category<select id="t3"><option>Commercial EPC</option><option>Infrastructure</option><option>Industrial</option><option>Residential</option></select></label>
       </div>
       <div class="f2">
-        <label>Tender Value (₹)<input id="t4" type="number" value="85000000"></label>
-        <label>EMD Amount (₹)<input id="t5" type="number" value="850000"></label>
+        <label>Tender Value (₹)<input id="t4" type="number" value="50000000"></label>
+        <label>EMD Amount (₹)<input id="t5" type="number" value="1000000"></label>
       </div>
       <div class="f2">
-        <label>Submission Deadline<input id="t6" type="date" value="${addDays(S.today,14)}"></label>
-        <label>Status<select id="t7"><option>Bidding</option><option>Submitted</option><option>Evaluation</option></select></label>
+        <label>Tender Document Fee (₹)<input id="t6" type="number" value="25000"></label>
+        <label>Submission Deadline<input id="t7" type="date" value="${addDays(S.today,14)}"></label>
       </div>
-      <label>Technical Notes<textarea id="t8" rows="2" placeholder="Pre-qualification criteria, JV partner details..."></textarea></label>
+      <label>Eligibility Criteria<input id="t8" value="Eligible - Meets turnover & tech criteria for G+8 commercial"></label>
+      <label>Document Checklist<input id="t9" value="Audited Balance Sheets (3 yrs), EMD Bank Guarantee, Solvency Cert (₹10 Cr), Tech Credentials"></label>
+      <label>Notes / Remarks<textarea id="t10" rows="2" placeholder="Pre-qualification details...">Turnkey Civil + Structural + MEP package.</textarea></label>
     </div>
     <div style="text-align:right">
       <button class="btn sec" onclick="closeM()">Cancel</button>
@@ -829,22 +1434,397 @@ function newTenderModal(){
 }
 
 async function saveTender(){
-  const title=$('#t1').value.trim();
+  const title = $('#t1').value.trim();
   if(!title) return toast('Please enter tender title');
-  const body={
+  const body = {
     title,
-    client:$('#t2').value,
-    type:$('#t3').value,
-    val:+$('#t4').value||0,
-    emd:+$('#t5').value||0,
-    sub_date:$('#t6').value,
-    status:$('#t7').value,
-    notes:$('#t8').value
+    client: $('#t2').value,
+    type: $('#t3').value,
+    val: +$('#t4').value || 0,
+    emd: +$('#t5').value || 0,
+    tender_fee: +$('#t6').value || 0,
+    sub_date: $('#t7').value,
+    eligibility: $('#t8').value,
+    docs_checklist: $('#t9').value,
+    notes: $('#t10').value,
+    status: 'Bidding'
   };
   closeM();
   const res = await api('/api/tenders', body);
   if(res && res.ok){
-    toast('Tender registered in SQLite database');
+    toast('Tender registered in SQLite database: ' + res.id);
+  }
+}
+
+function updateTenderStatusModal(tenderId){
+  const t = (S.tenders||[]).find(x => x.id === tenderId);
+  if(!t) return;
+  modal(`
+    <h2>Update Tender Status – ${t.id}</h2>
+    <div class="f">
+      <label>Current Status: <b>${t.status}</b></label>
+      <label>New Status
+        <select id="ts1">
+          <option ${t.status==='Draft'?'selected':''}>Draft</option>
+          <option ${t.status==='Under Evaluation'?'selected':''}>Under Evaluation</option>
+          <option ${t.status==='Eligible'?'selected':''}>Eligible</option>
+          <option ${t.status==='Bidding'?'selected':''}>Bidding</option>
+          <option ${t.status==='Submitted'?'selected':''}>Submitted</option>
+          <option ${t.status==='Shortlisted'?'selected':''}>Shortlisted</option>
+          <option ${t.status==='Awarded'?'selected':''}>Awarded</option>
+          <option ${t.status==='Lost'?'selected':''}>Lost</option>
+        </select>
+      </label>
+      <label>Loss Reason (if Lost)<input id="ts2" placeholder="e.g. Price L1 was 5% lower..." value="${t.loss_reason||''}"></label>
+    </div>
+    <div style="text-align:right">
+      <button class="btn sec" onclick="closeM()">Cancel</button>
+      <button class="btn ok" onclick="saveTenderStatus('${tenderId}')">Save Status</button>
+    </div>
+  `);
+}
+
+async function saveTenderStatus(tenderId){
+  const body = {
+    id: tenderId,
+    status: $('#ts1').value,
+    loss_reason: $('#ts2').value
+  };
+  closeM();
+  const res = await api('/api/tenders/status', body);
+  if(res && res.ok){
+    toast('Tender status updated to ' + body.status);
+  }
+}
+
+function newBidModal(tenderId, oppId){
+  const t = (S.tenders||[]).find(x => x.id === tenderId);
+  const o = (S.opportunities||[]).find(x => x.id === oppId);
+  const defaultClient = t ? t.client : o ? o.client_name : 'ABC Infrastructure Pvt. Ltd.';
+  const defaultTitle = t ? t.title : o ? o.title : 'Commercial Building G+8 Turnkey Civil & MEP';
+  const defaultCost = 41200000;
+  const defaultMargin = 17.7;
+  const defaultPrice = Math.round(defaultCost * (1 + defaultMargin / 100));
+
+  modal(`
+    <h2>4. Prepare Cost Estimation & Commercial Bid</h2>
+    <div class="f">
+      <label>Project Bid Title<input id="b1" value="${defaultTitle}"></label>
+      <div class="f2">
+        <label>Client Organization<input id="b2" value="${defaultClient}"></label>
+        <label>Linked Tender Ref<input id="b3" value="${tenderId||(t?t.id:'')}"></label>
+      </div>
+      <div class="f3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <label>Direct & Indirect Cost (₹)<input id="b4" type="number" value="${defaultCost}" oninput="calcBid()"></label>
+        <label>Target Margin (%)<input id="b5" type="number" step="0.1" value="${defaultMargin}" oninput="calcBid()"></label>
+        <label>Calculated Quoted Price (₹)<input id="b6" type="number" value="${defaultPrice}"></label>
+      </div>
+      <label>Technical Proposal Highlights<textarea id="b7" rows="2">12-Stage WBS, Bar Bending Schedule, C35/40 High-grade mix design, 3D BIM coordination, HSE & Quality protocols</textarea></label>
+      <label>Commercial & BOQ Terms<textarea id="b8" rows="2">Itemized BOQ with firm price clause for 12 months, 10% mobilization advance against BG, 5% retention.</textarea></label>
+    </div>
+    <div style="text-align:right">
+      <button class="btn sec" onclick="closeM()">Cancel</button>
+      <button class="btn" onclick="saveBid('${oppId}')">Create Bid Record</button>
+    </div>
+  `);
+}
+
+function calcBid(){
+  const cost = +$('#b4').value || 0;
+  const margin = +$('#b5').value || 0;
+  $('#b6').value = Math.round(cost * (1 + margin / 100));
+}
+
+async function saveBid(oppId){
+  const title = $('#b1').value.trim();
+  if(!title) return toast('Please enter bid title');
+  const body = {
+    opp_id: oppId || '',
+    tender_id: $('#b3').value || '',
+    client: $('#b2').value,
+    title,
+    est_cost: +$('#b4').value || 0,
+    margin_pct: +$('#b5').value || 15,
+    bid_price: +$('#b6').value || 0,
+    tech_proposal: $('#b7').value,
+    fin_proposal: $('#b8').value,
+    internal_approval: 'In Review',
+    status: 'Draft'
+  };
+  closeM();
+  const res = await api('/api/crm/bids', body);
+  if(res && res.ok){
+    toast('Bid proposal created: ' + res.id);
+  }
+}
+
+async function approveBidAction(bidId){
+  const res = await api('/api/crm/bids/approve', { id: bidId, approvedBy: 'Director / CEO' });
+  if(res && res.ok){
+    toast('Bid ' + bidId + ' approved by MD / CEO!');
+  }
+}
+
+async function submitBidAction(bidId){
+  const res = await api('/api/crm/bids/submit', { id: bidId });
+  if(res && res.ok){
+    toast('Bid ' + bidId + ' marked as Submitted to client.');
+  }
+}
+
+function recordBidResultModal(bidId){
+  modal(`
+    <h2>Record Bid Decision Result – ${bidId}</h2>
+    <div class="f">
+      <label>Result Outcome
+        <select id="br1">
+          <option value="Awarded">Awarded (Won) 🏆</option>
+          <option value="Lost">Lost</option>
+        </select>
+      </label>
+      <label>Loss Reason / Debrief Notes (if lost)
+        <input id="br2" placeholder="e.g. Price difference, L1 bidder...">
+      </label>
+    </div>
+    <div style="text-align:right">
+      <button class="btn sec" onclick="closeM()">Cancel</button>
+      <button class="btn ok" onclick="saveBidResult('${bidId}')">Confirm Result</button>
+    </div>
+  `);
+}
+
+async function saveBidResult(bidId){
+  const status = $('#br1').value;
+  const lossReason = $('#br2').value;
+  closeM();
+  const res = await api('/api/crm/bids/result', { id: bidId, status, lossReason });
+  if(res && res.ok){
+    toast('Bid result recorded: ' + status);
+  }
+}
+
+function viewBOQModal(bidId){
+  const b = (S.bids||[]).find(x => x.id === bidId) || {
+    id: 'BID-101', client: 'ABC Infrastructure Pvt. Ltd.', title: 'Commercial Building G+8 Turnkey Civil & MEP',
+    est_cost: 41200000, margin_pct: 17.7, bid_price: 48500000
+  };
+  modal(`
+    <h2>BOQ Rate Analysis & Cost Sheet – ${b.id}</h2>
+    <div class="card" style="margin:10px 0;padding:12px;background:#f8f9fa">
+      <div style="display:flex;justify-content:space-between">
+        <div><b>Client:</b> ${b.client}</div>
+        <div><b>Estimated Cost:</b> ${mn(b.est_cost)}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px">
+        <div><b>Margin:</b> ${b.margin_pct}%</div>
+        <div style="color:#2f9e44;font-size:15px"><b>Quoted Bid: ${mn(b.bid_price)}</b></div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Item Code</th><th>Description</th><th class="num">Qty</th><th>Unit</th><th class="num">Estimated Rate</th><th class="num">Quoted Rate</th><th class="num">Total (₹)</th></tr></thead>
+      <tbody>
+        <tr><td>1.01</td><td>Earthwork Excavation in all types of soil</td><td class="num">4,200</td><td>cum</td><td class="num">₹280</td><td class="num">₹340</td><td class="num">₹14,28,000</td></tr>
+        <tr><td>1.02</td><td>PCC 1:4:8 Substructure Levelling Course</td><td class="num">380</td><td>cum</td><td class="num">₹4,800</td><td class="num">₹5,600</td><td class="num">₹21,28,000</td></tr>
+        <tr><td>1.03</td><td>RCC M35 Foundation Raft & Shear Walls</td><td class="num">1,450</td><td>cum</td><td class="num">₹7,200</td><td class="num">₹8,450</td><td class="num">₹1,22,52,500</td></tr>
+        <tr><td>1.04</td><td>TMT Steel Rebar Fe 550D Fabrication</td><td class="num">185</td><td>MT</td><td class="num">₹68,000</td><td class="num">₹79,500</td><td class="num">₹1,47,07,500</td></tr>
+        <tr><td>1.05</td><td>RCC Superstructure Framing G+1 to G+8</td><td class="num">1,820</td><td>cum</td><td class="num">₹7,600</td><td class="num">₹8,900</td><td class="num">₹1,61,98,000</td></tr>
+        <tr><td>1.06</td><td>External Glazing & ACP Elevation Cladding</td><td class="num">1,100</td><td>sqm</td><td class="num">₹1,450</td><td class="num">₹1,720</td><td class="num">₹18,92,000</td></tr>
+      </tbody>
+    </table>
+    <div style="text-align:right;margin-top:14px">
+      <button class="btn" onclick="closeM()">Close BOQ</button>
+    </div>
+  `);
+}
+
+function newOpportunityModal(clientId){
+  const c = (S.clients||[]).find(x => x.id === clientId);
+  modal(`
+    <h2>5. New Construction Opportunity</h2>
+    <div class="f">
+      <label>Opportunity Title<input id="op1" value="ABC Commercial Hub Construction (G+8)"></label>
+      <div class="f2">
+        <label>Client Organization<input id="op2" value="${c ? c.name : 'ABC Infrastructure Pvt. Ltd.'}"></label>
+        <label>Estimated Value (₹)<input id="op3" type="number" value="50000000"></label>
+      </div>
+      <label>Scope of Work<textarea id="op4" rows="2">Turnkey Civil, Structural RCC, MEP & Architectural Finishes for 4,500 sq.m G+8 office tower</textarea></label>
+      <div class="f3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <label>Pipeline Stage<select id="op5">
+          <option>Identification</option>
+          <option>Qualification</option>
+          <option>Proposal/Bid</option>
+          <option>Negotiation</option>
+          <option selected>Won</option>
+        </select></label>
+        <label>Win Probability (%)<input id="op6" type="number" value="100"></label>
+        <label>Expected Closing Date<input id="op7" type="date" value="${S.today}"></label>
+      </div>
+      <label>Responsible Manager<input id="op8" value="Rajesh Sharma (BDM)"></label>
+    </div>
+    <div style="text-align:right">
+      <button class="btn sec" onclick="closeM()">Cancel</button>
+      <button class="btn" onclick="saveOpportunity('${clientId||''}')">Save Opportunity</button>
+    </div>
+  `);
+}
+
+async function saveOpportunity(clientId){
+  const title = $('#op1').value.trim();
+  if(!title) return toast('Please enter opportunity title');
+  const body = {
+    client_id: clientId || '',
+    client_name: $('#op2').value,
+    title,
+    scope: $('#op4').value,
+    est_val: +$('#op3').value || 0,
+    stage: $('#op5').value,
+    win_prob: +$('#op6').value || 50,
+    expected_close: $('#op7').value,
+    responsible_mgr: $('#op8').value,
+    status: $('#op5').value === 'Won' ? 'Won' : 'Active'
+  };
+  closeM();
+  const res = await api('/api/crm/opportunities', body);
+  if(res && res.ok){
+    toast('Opportunity registered: ' + res.id);
+  }
+}
+
+function logCRMActivityModal(refId, refType){
+  modal(`
+    <h2>Log Meeting, Call or Negotiation Follow-up</h2>
+    <div class="f">
+      <div class="f2">
+        <label>Activity Type<select id="ac1">
+          <option>Meeting</option>
+          <option>Phone Call</option>
+          <option>Site Visit</option>
+          <option>Negotiation</option>
+          <option>Presentation</option>
+        </select></label>
+        <label>Reference Ref ID<input id="ac2" value="${refId||'OPP-101'}"></label>
+      </div>
+      <label>Subject / Title<input id="ac3" value="Commercial terms negotiation & scope finalization"></label>
+      <div class="f2">
+        <label>Conducted By<input id="ac4" value="Rajesh Sharma (BDM) & Suresh Nair (VP Projects)"></label>
+        <label>Client Attendees<input id="ac5" value="Mr. Vikram Adani (Director) & Chief Engineer"></label>
+      </div>
+      <label>Discussion Summary<textarea id="ac6" rows="2">Agreed on final bid price ₹4.85 Cr with 10% mobilization advance against BG. LoA handed over.</textarea></label>
+      <div class="f2">
+        <label>Next Action Plan<input id="ac7" value="Execute 1-Click Project Conversion & Site Setup"></label>
+        <label>Next Follow-up Date<input id="ac8" type="date" value="${addDays(S.today, 3)}"></label>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <button class="btn sec" onclick="closeM()">Cancel</button>
+      <button class="btn" onclick="saveCRMActivity('${refType||'opportunity'}')">Save Activity</button>
+    </div>
+  `);
+}
+
+async function saveCRMActivity(refType){
+  const title = $('#ac3').value.trim();
+  if(!title) return toast('Please enter subject');
+  const body = {
+    ref_id: $('#ac2').value,
+    ref_type: refType,
+    type: $('#ac1').value,
+    title,
+    conducted_by: $('#ac4').value,
+    client_attendees: $('#ac5').value,
+    summary: $('#ac6').value,
+    next_action: $('#ac7').value,
+    next_date: $('#ac8').value,
+    status: 'Completed'
+  };
+  closeM();
+  const res = await api('/api/crm/activities', body);
+  if(res && res.ok){
+    toast('CRM activity logged successfully');
+  }
+}
+
+/* ==============================================================
+   FLAGSHIP WORKFLOW: CRM TO PROJECT CONVERSION
+   ============================================================== */
+
+function convertProjectModal(oppId){
+  const o = (S.opportunities||[]).find(x => x.id === oppId) || {
+    id: 'OPP-101', client_name: 'ABC Infrastructure Pvt. Ltd.',
+    title: 'ABC Commercial Hub Construction (G+8)', est_val: 50000000
+  };
+  const b = (S.bids||[]).find(x => x.opp_id === oppId || x.client === o.client_name);
+  const contractVal = b ? b.bid_price : 48500000;
+
+  modal(`
+    <h2>🚀 CRM to Project Conversion – 1-Click Setup</h2>
+    <p class="mut" style="margin-bottom:12px">Transferring won opportunity <b>${o.id}</b> into active <b>Project Management</b> module with 12-Stage WBS.</p>
+    
+    <div class="card" style="background:#f8f9fa;margin-bottom:12px;padding:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <b>Client: ${o.client_name}</b>
+        <span class="tag t-ok" style="font-weight:700">Tender Awarded</span>
+      </div>
+      <div>Contract Value: <b style="color:#2f9e44;font-size:16px">${mn(contractVal)}</b> (Budget: ${mn(o.est_val)})</div>
+    </div>
+
+    <div class="f">
+      <label>Project Name<input id="cp1" value="ABC Commercial Hub – Visakhapatnam (G+8)"></label>
+      <div class="f2">
+        <label>Client Authority<input id="cp2" value="${o.client_name}"></label>
+        <label>Contract Value (₹)<input id="cp3" type="number" value="${contractVal}"></label>
+      </div>
+      <div class="f2">
+        <label>City<input id="cp4" value="Visakhapatnam"></label>
+        <label>Project Type<select id="cp5"><option>Commercial</option><option>Apartment</option><option>Villa</option><option>Industrial</option></select></label>
+      </div>
+      <div class="f2">
+        <label>Built-up Area (sq.m)<input id="cp6" type="number" value="4500"></label>
+        <label>Floors<input id="cp7" type="number" value="8"></label>
+      </div>
+      <label>Site Address<input id="cp8" value="Plot 42, Port Access Corridor, Harbour Road"></label>
+      
+      <div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:12px">
+        <b>Automatic 12-Stage WBS Setup:</b>
+        <div style="color:#6b7686;margin-top:4px">
+          1. Mobilization • 2. Excavation • 3. Substructure PCC/RCC • 4. Plinth Beam • 5. RCC Framing G+1..4 • 6. RCC Framing G+5..8 • 7. Brickwork • 8. Plastering • 9. MEP • 10. Flooring • 11. Finishes • 12. Final Handover
+        </div>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <button class="btn sec" onclick="closeM()">Cancel</button>
+      <button class="btn ok" style="font-weight:700;padding:9px 18px" onclick="executeProjectConversion('${oppId}')">✓ Confirm & Create Active Enterprise Project</button>
+    </div>
+  `);
+}
+
+async function executeProjectConversion(oppId){
+  const customData = {
+    name: $('#cp1').value,
+    client: $('#cp2').value,
+    contract: +$('#cp3').value || 48500000,
+    city: $('#cp4').value,
+    type: $('#cp5').value,
+    area: +$('#cp6').value || 4500,
+    floors: +$('#cp7').value || 8,
+    addr: $('#cp8').value
+  };
+  closeM();
+  const res = await api('/api/crm/convert-to-project', { oppId, customData });
+  if(res && res.ok){
+    const newPid = res.result.projectId;
+    toast('🚀 Project ' + newPid + ' successfully created with 12 WBS stages!');
+    modal(`
+      <div style="text-align:center;padding:10px 0">
+        <div style="font-size:42px;margin-bottom:8px">🎉</div>
+        <h2>Project ${newPid} is Now Active!</h2>
+        <p class="mut" style="margin:8px 0 16px">The business opportunity has been converted into an active execution project with 12-stage WBS, engineering team, and material allocation.</p>
+        <div style="display:flex;justify-content:center;gap:10px">
+          <button class="btn sec" onclick="closeM()">Stay in CRM</button>
+          <button class="btn ok" style="font-weight:700" onclick="closeM(); openProject('${newPid}')">Open Project ${newPid} in Project Management →</button>
+        </div>
+      </div>
+    `);
   }
 }
 
