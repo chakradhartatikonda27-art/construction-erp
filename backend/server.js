@@ -246,6 +246,53 @@ async function requestHandler(req, res) {
         return sendJSON(res, { ok: true, state: dbLayer.getFullState() });
       }
 
+      // 6a. Project Tasks: Create Task
+      if (pathname === '/api/tasks' && req.method === 'POST') {
+        const body = await parseJSON(req);
+        const taskId = dbLayer.createTaskRecord(body);
+        return sendJSON(res, { ok: true, id: taskId, state: dbLayer.getFullState() });
+      }
+
+      // 6b. Project Tasks: Update Progress, Photo, Remarks, Delay
+      const taskUpdateMatch = pathname.match(/^\/api\/tasks\/([^/]+)\/update$/);
+      if (taskUpdateMatch && req.method === 'POST') {
+        const taskId = taskUpdateMatch[1];
+        const body = await parseJSON(req);
+        dbLayer.updateTaskProgress(taskId, body.progress, body.status, body.remarks, body.photo, body.delay_reason);
+        return sendJSON(res, { ok: true, state: dbLayer.getFullState() });
+      }
+
+      // 6c. Project Tasks: Status Toggle
+      const taskStatusMatch = pathname.match(/^\/api\/tasks\/([^/]+)\/status$/);
+      if (taskStatusMatch && req.method === 'POST') {
+        const taskId = taskStatusMatch[1];
+        const body = await parseJSON(req);
+        dbLayer.updateTaskStatus(taskId, body.status, body.delay_reason);
+        return sendJSON(res, { ok: true, state: dbLayer.getFullState() });
+      }
+
+      // 6d. Project Milestones: Create Milestone
+      if (pathname === '/api/milestones' && req.method === 'POST') {
+        const body = await parseJSON(req);
+        const mlsId = dbLayer.createMilestoneRecord(body);
+        return sendJSON(res, { ok: true, id: mlsId, state: dbLayer.getFullState() });
+      }
+
+      // 6e. Project Milestones: Achieve Milestone
+      const mlsAchieveMatch = pathname.match(/^\/api\/milestones\/([^/]+)\/achieve$/);
+      if (mlsAchieveMatch && req.method === 'POST') {
+        const mlsId = mlsAchieveMatch[1];
+        dbLayer.achieveMilestoneRecord(mlsId);
+        return sendJSON(res, { ok: true, state: dbLayer.getFullState() });
+      }
+
+      // 6f. Project Team: Assign Team Member
+      if (pathname === '/api/projects/team-member' && req.method === 'POST') {
+        const body = await parseJSON(req);
+        const tmId = dbLayer.assignProjectTeamMember(body);
+        return sendJSON(res, { ok: true, id: tmId, state: dbLayer.getFullState() });
+      }
+
       // 7. Staff Check-in
       if (pathname === '/api/attendance/checkin' && req.method === 'POST') {
         const body = await parseJSON(req);

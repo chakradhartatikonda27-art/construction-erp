@@ -73,7 +73,9 @@ const USERS = [
   { id: 'u4', name: 'Suresh (Supervisor)', role: 'sup', cost: 1500 },
   { id: 'u5', name: 'Lakshmi (Stores)', role: 'store', cost: 1400 },
   { id: 'u6', name: 'Sita Devi', role: 'qa', cost: 2300 },
-  { id: 'u7', name: 'Prakash (Accounts)', role: 'acc', cost: 0 }
+  { id: 'u7', name: 'Prakash (Accounts)', role: 'acc', cost: 0 },
+  { id: 'u8', name: 'K. Naresh', role: 'plan', cost: 2500 },
+  { id: 'u9', name: 'M. Varma', role: 'qs', cost: 2400 }
 ];
 
 const CITIES = {
@@ -449,6 +451,51 @@ function initSchema() {
       next_action TEXT,
       next_date TEXT,
       status TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS project_tasks (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      assigned_to TEXT NOT NULL,
+      assigned_name TEXT,
+      assigned_role TEXT,
+      start_date TEXT,
+      due_date TEXT,
+      priority TEXT DEFAULT 'Medium',
+      status TEXT DEFAULT 'Not Started',
+      progress REAL DEFAULT 0,
+      weight REAL DEFAULT 10,
+      photo TEXT,
+      remarks TEXT,
+      delay_reason TEXT,
+      created_at TEXT,
+      completed_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS project_milestones (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      target_date TEXT NOT NULL,
+      status TEXT DEFAULT 'Pending',
+      billing_pct REAL DEFAULT 10,
+      weight REAL DEFAULT 15,
+      achieved_date TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS project_team_members (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      role_title TEXT NOT NULL,
+      responsibility TEXT NOT NULL,
+      assigned_date TEXT NOT NULL,
+      phone TEXT,
+      email TEXT,
+      daily_rate REAL DEFAULT 0,
+      status TEXT DEFAULT 'Active'
     );
   `);
 
@@ -845,6 +892,122 @@ function logCRMActivity(f) {
   return id;
 }
 
+function createTaskRecord(f) {
+  const today = getConfig('today', new Date().toISOString().slice(0, 10));
+  const id = f.id || ('TSK-' + uid());
+  const assignedUser = db.prepare('SELECT name, role FROM users WHERE id = ?').get(f.assigned_to);
+  const assignedName = f.assigned_name || (assignedUser ? assignedUser.name : f.assigned_to);
+  const assignedRole = f.assigned_role || (assignedUser ? assignedUser.role : 'Site Staff');
+  
+  db.prepare(`
+    INSERT INTO project_tasks (id, project_id, name, assigned_to, assigned_name, assigned_role, start_date, due_date, priority, status, progress, weight, photo, remarks, delay_reason, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id, f.project_id, f.name, f.assigned_to, assignedName, assignedRole,
+    f.start_date || today, f.due_date || addDays(today, 7),
+    f.priority || 'Medium', f.status || 'Not Started',
+    Number(f.progress) || 0, Number(f.weight) || 10,
+    f.photo || '', f.remarks || '', f.delay_reason || '', today
+  );
+
+  logAudit(`Task created: ${f.name} assigned to ${assignedName}`, f.project_id);
+  sendWA('pm', `📋 New Task Assigned: "${f.name}" to ${assignedName} (Due: ${f.due_date || addDays(today, 7)})`, { act: 'viewTasks', pid: f.project_id });
+  return id;
+}
+
+function updateTaskProgress(taskId, progress, status, remarks, photo, delayReason) {
+  const today = getConfig('today', new Date().toISOString().slice(0, 10));
+  const task = db.prepare('SELECT * FROM project_tasks WHERE id = ?').get(taskId);
+  if (!task) return null;
+
+  const newProg = Math.min(100, Math.max(0, Number(progress) !== undefined ? Number(progress) : task.progress));
+  let newStatus = status || task.status;
+  if (newProg === 100 && newStatus !== 'Completed') newStatus = 'Completed';
+  if (newProg > 0 && newProg < 100 && newStatus === 'Not Started') newStatus = 'In Progress';
+
+  db.prepare(`
+    UPDATE project_tasks 
+    SET progress = ?, status = ?, remarks = COALESCE(?, remarks), photo = COALESCE(?, photo), delay_reason = COALESCE(?, delay_reason), completed_at = ?
+    WHERE id = ?
+  `).run(
+    newProg, newStatus, remarks || null, photo || null, delayReason || null,
+    newStatus === 'Completed' ? today : null,
+    taskId
+  );
+
+  logAudit(`Task updated: ${task.name} → ${newProg}% (${newStatus})`, task.project_id);
+  if (newStatus === 'Delayed') {
+    sendWA('pm', `⚠️ Task Delay Escalation: "${task.name}" is Delayed. Reason: ${delayReason || 'Unspecified'}`, { act: 'viewTasks', pid: task.project_id });
+  } else if (newStatus === 'Completed') {
+    sendWA('pm', `✅ Task Completed: "${task.name}" marked 100% by ${task.assigned_name}`, { act: 'viewTasks', pid: task.project_id });
+  }
+  return true;
+}
+
+function updateTaskStatus(taskId, status, delayReason) {
+  const today = getConfig('today', new Date().toISOString().slice(0, 10));
+  const task = db.prepare('SELECT * FROM project_tasks WHERE id = ?').get(taskId);
+  if (!task) return null;
+
+  const prog = status === 'Completed' ? 100 : (status === 'Not Started' ? 0 : task.progress);
+  db.prepare(`
+    UPDATE project_tasks 
+    SET status = ?, progress = ?, delay_reason = ?, completed_at = ?
+    WHERE id = ?
+  `).run(status, prog, delayReason || null, status === 'Completed' ? today : null, taskId);
+
+  logAudit(`Task status changed: ${task.name} → ${status}`, task.project_id);
+  return true;
+}
+
+function createMilestoneRecord(m) {
+  const id = m.id || ('MLS-' + uid());
+  db.prepare(`
+    INSERT INTO project_milestones (id, project_id, name, target_date, status, billing_pct, weight, achieved_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id, m.project_id, m.name, m.target_date, m.status || 'Pending',
+    Number(m.billing_pct) || 10, Number(m.weight) || 15, m.achieved_date || null
+  );
+  logAudit(`Milestone created: ${m.name}`, m.project_id);
+  return id;
+}
+
+function achieveMilestoneRecord(mstoneId) {
+  const today = getConfig('today', new Date().toISOString().slice(0, 10));
+  const m = db.prepare('SELECT * FROM project_milestones WHERE id = ?').get(mstoneId);
+  if (!m) return null;
+
+  db.prepare('UPDATE project_milestones SET status = "Achieved", achieved_date = ? WHERE id = ?').run(today, mstoneId);
+  
+  const proj = db.prepare('SELECT * FROM projects WHERE id = ?').get(m.project_id);
+  if (proj && m.billing_pct > 0) {
+    const invAmt = Math.round(proj.contract * (m.billing_pct / 100));
+    const invId = 'INV-' + uid();
+    db.prepare('INSERT INTO invoices (id, project_id, k, desc, amt, status, d) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .run(invId, m.project_id, 0, `Milestone Billing – ${m.name} (${m.billing_pct}%)`, invAmt, 'Pending', today);
+    logAudit(`Milestone achieved: ${m.name} → Raised invoice ₹${invAmt.toLocaleString('en-IN')}`, m.project_id);
+    sendWA('acc', `💰 Milestone "${m.name}" achieved – invoice raised for ${proj.name}`, { act: 'viewInvoices', pid: m.project_id });
+  }
+
+  sendWA('pm', `🏆 Milestone Achieved: "${m.name}" marked complete for project ${m.project_id}!`, { act: 'viewMilestones', pid: m.project_id });
+  return true;
+}
+
+function assignProjectTeamMember(tm) {
+  const today = getConfig('today', new Date().toISOString().slice(0, 10));
+  const id = tm.id || ('TM-' + uid());
+  db.prepare(`
+    INSERT OR REPLACE INTO project_team_members (id, project_id, user_id, name, role_title, responsibility, assigned_date, phone, email, daily_rate, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id, tm.project_id, tm.user_id, tm.name, tm.role_title, tm.responsibility,
+    tm.assigned_date || today, tm.phone || '', tm.email || '', Number(tm.daily_rate) || 0, tm.status || 'Active'
+  );
+  logAudit(`Team member assigned: ${tm.name} as ${tm.role_title}`, tm.project_id);
+  return id;
+}
+
 function seedDatabase() {
   db.exec(`
     DELETE FROM config;
@@ -876,6 +1039,9 @@ function seedDatabase() {
     DELETE FROM opportunities;
     DELETE FROM bids;
     DELETE FROM crm_activities;
+    DELETE FROM project_tasks;
+    DELETE FROM project_milestones;
+    DELETE FROM project_team_members;
   `);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -1315,6 +1481,72 @@ function seedDatabase() {
   insertSnag.run('SNG-02', 'P002', '304', 'Master bathroom mixer tap pressure low', 'Medium', 'Open', addDays(today, 2), 'Plumbing Contractor');
   insertSnag.run('SNG-03', 'P002', '402', 'Main entry door lock latch alignment required', 'Low', 'Open', addDays(today, 3), 'Carpentry Gang');
 
+  // Seed Project Tasks (Matching Section 4.C Specification)
+  const insertTask = db.prepare(`
+    INSERT INTO project_tasks (id, project_id, name, assigned_to, assigned_name, assigned_role, start_date, due_date, priority, status, progress, weight, photo, remarks, delay_reason, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  insertTask.run(
+    'TSK-101', 'P003', 'Site preparation & boundary barricading', 'u4', 'Suresh (Supervisor)', 'Site Supervisor',
+    addDays(today, -15), addDays(today, -5), 'High', 'Completed', 100, 15,
+    'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?w=300',
+    'Site cleared, boundary hoarding erected, temporary water and power connections verified.', '', addDays(today, -18)
+  );
+  insertTask.run(
+    'TSK-102', 'P003', 'Deep foundation excavation & trenching', 'u3', 'Anitha Rao', 'Site Engineer',
+    addDays(today, -6), addDays(today, 2), 'Urgent', 'In Progress', 85, 20,
+    'https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=300',
+    'Excavation depth 4.5m achieved. Sub-grade levelling and dewatering pumps active.', '', addDays(today, -7)
+  );
+  insertTask.run(
+    'TSK-103', 'P003', 'PCC bed & Foundation raft rebar binding', 'u3', 'Anitha Rao', 'Site Engineer',
+    addDays(today, 1), addDays(today, 12), 'High', 'In Progress', 35, 25,
+    '', 'PCC M15 bed completed. Bottom reinforcement mat tying started as per DWG-STR-201.', '', addDays(today, -1)
+  );
+  insertTask.run(
+    'TSK-104', 'P003', 'Column starter casting & shear wall rebar', 'u4', 'Suresh (Supervisor)', 'Site Supervisor',
+    addDays(today, 10), addDays(today, 22), 'Normal', 'Not Started', 0, 20,
+    '', 'Shuttering plywood inspection pending. Rebar couplers staged at yard.', '', today
+  );
+  insertTask.run(
+    'TSK-105', 'P003', 'Basement roof slab shuttering & casting', 'u2', 'Ravi Kumar', 'Project Manager',
+    addDays(today, 20), addDays(today, 32), 'Urgent', 'Not Started', 0, 20,
+    '', 'RMC batching plant calibration confirmed. RERA inspection scheduled prior to pour.', '', today
+  );
+  insertTask.run(
+    'TSK-106', 'P002', 'External plastering & Weather-coat paint', 'u4', 'Suresh (Supervisor)', 'Site Supervisor',
+    addDays(today, -10), addDays(today, -2), 'Urgent', 'Delayed', 45, 15,
+    '', 'Work delayed due to unseasonal rain and scaffold re-anchoring.', 'Weather & high wind delays', addDays(today, -12)
+  );
+  insertTask.run(
+    'TSK-107', 'P004', 'Commercial retail basement excavation', 'u3', 'Anitha Rao', 'Site Engineer',
+    addDays(today, -5), addDays(today, 8), 'High', 'In Progress', 60, 25,
+    '', 'Retaining wall piling 70% complete. Soil disposal trucks operational.', '', addDays(today, -6)
+  );
+
+  // Seed Project Milestones (Matching Section 4.D Specification)
+  const insertMstone = db.prepare(`
+    INSERT INTO project_milestones (id, project_id, name, target_date, status, billing_pct, weight, achieved_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  insertMstone.run('MLS-101', 'P003', 'Site Preparation & Statutory NOCs', addDays(today, -10), 'Achieved', 10, 15, addDays(today, -8));
+  insertMstone.run('MLS-102', 'P003', 'Substructure & Raft Foundation Completion', addDays(today, 15), 'Pending', 15, 25, null);
+  insertMstone.run('MLS-103', 'P003', 'Ground Floor Slab & Plinth Casting', addDays(today, 45), 'Pending', 20, 20, null);
+  insertMstone.run('MLS-104', 'P003', 'Superstructure G+8 Structural Topping Out', addDays(today, 120), 'Pending', 25, 25, null);
+  insertMstone.run('MLS-105', 'P003', 'Final Finishing, MEP Testing & Handover', addDays(today, 180), 'Pending', 10, 15, null);
+
+  // Seed Project Team Members (Matching Section 4.E Specification)
+  const insertTeamMem = db.prepare(`
+    INSERT INTO project_team_members (id, project_id, user_id, name, role_title, responsibility, assigned_date, phone, email, daily_rate, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  insertTeamMem.run('TM-101', 'P003', 'u1', 'Mohan S.', 'Project Director', 'Overall project monitoring, budget governance & client steering approvals', addDays(today, -60), '+91 98490 11001', 'director@siyantech.com', 0, 'Active');
+  insertTeamMem.run('TM-102', 'P003', 'u2', 'Ravi Kumar', 'Project Manager', 'Project execution, schedule management, site safety & QA/QC signoffs', addDays(today, -60), '+91 98490 22002', 'ravi.pm@siyantech.com', 3500, 'Active');
+  insertTeamMem.run('TM-103', 'P003', 'u3', 'Anitha Rao', 'Site Engineer', 'Technical activity execution, rebar checks, concrete cube tests & DPR entry', addDays(today, -60), '+91 98490 33003', 'anitha.eng@siyantech.com', 2200, 'Active');
+  insertTeamMem.run('TM-104', 'P003', 'u4', 'Suresh (Supervisor)', 'Site Supervisor', 'Daily labour gang coordination, shuttering supervision & material issue', addDays(today, -60), '+91 98490 44004', 'suresh.site@siyantech.com', 1500, 'Active');
+  insertTeamMem.run('TM-105', 'P003', 'u8', 'K. Naresh', 'Planning Engineer', 'WBS schedules, 4D BIM timeline, critical path analysis & milestone tracking', addDays(today, -60), '+91 98490 88008', 'naresh.plan@siyantech.com', 2500, 'Active');
+  insertTeamMem.run('TM-106', 'P003', 'u9', 'M. Varma', 'Quantity Surveyor', 'BOQ quantities, BBS steel reconciliation, site measurements & RA client bills', addDays(today, -60), '+91 98490 99009', 'varma.qs@siyantech.com', 2400, 'Active');
+
   // WhatsApp Messages
   sendWA('owner', `📊 Daily summary ${today}\n• Projects: 5 (1 delayed)\n• Present today: 24\n• Cost to date: ₹2.4 Cr\n• Pending approvals: 3\n• Alerts: 2`);
 }
@@ -1468,6 +1700,9 @@ function getFullState() {
   const opportunities = db.prepare('SELECT * FROM opportunities ORDER BY rowid ASC').all();
   const bids = db.prepare('SELECT * FROM bids ORDER BY rowid ASC').all();
   const crmActivities = db.prepare('SELECT * FROM crm_activities ORDER BY rowid DESC').all();
+  const tasks = db.prepare('SELECT * FROM project_tasks ORDER BY rowid ASC').all();
+  const milestones = db.prepare('SELECT * FROM project_milestones ORDER BY rowid ASC').all();
+  const teamMembers = db.prepare('SELECT * FROM project_team_members ORDER BY rowid ASC').all();
 
   return {
     today,
@@ -1500,7 +1735,10 @@ function getFullState() {
     clients,
     opportunities,
     bids,
-    crmActivities
+    crmActivities,
+    tasks,
+    milestones,
+    teamMembers
   };
 }
 
@@ -1510,13 +1748,16 @@ const projCount = db.prepare('SELECT COUNT(*) as c FROM projects').get().c;
 const tenderCount = db.prepare('SELECT COUNT(*) as c FROM tenders').get().c;
 const docCount = db.prepare('SELECT COUNT(*) as c FROM documents_tbl').get().c;
 let leadCount = 0;
+let taskCount = 0;
 try {
   leadCount = db.prepare('SELECT COUNT(*) as c FROM leads').get().c;
+  taskCount = db.prepare('SELECT COUNT(*) as c FROM project_tasks').get().c;
 } catch (e) {
   leadCount = 0;
+  taskCount = 0;
 }
 
-if (projCount === 0 || tenderCount === 0 || docCount === 0 || leadCount === 0) {
+if (projCount === 0 || tenderCount === 0 || docCount === 0 || leadCount === 0 || taskCount === 0) {
   seedDatabase();
 }
 
@@ -1540,6 +1781,12 @@ module.exports = {
   recordBidResult,
   convertOpportunityToProject,
   logCRMActivity,
+  createTaskRecord,
+  updateTaskProgress,
+  updateTaskStatus,
+  createMilestoneRecord,
+  achieveMilestoneRecord,
+  assignProjectTeamMember,
   uid,
   addDays,
   MATS,
