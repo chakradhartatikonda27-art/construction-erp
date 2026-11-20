@@ -65,12 +65,19 @@ th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;
 td{padding:8px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}tr:last-child td{border-bottom:0}
 .num{text-align:right;font-variant-numeric:tabular-nums}.mut{color:var(--mut)}.dn{color:var(--bad)}.up{color:var(--ok)}
 tr.click{cursor:pointer}tr.click:hover{background:#f8fafc}
-.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
-.t-ok{background:#e6f6ea;color:#237a37}.t-warn{background:#fff3d6;color:#a86a00}.t-bad{background:#fde8e8;color:#b02525}.t-blue{background:#e3f0fc;color:#165f9f}.t-gray{background:#f1f5f9;color:#475569}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap;line-height:1.4}
+.t-ok{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
+.t-warn{background:#fffbeb;color:#b45309;border:1px solid #fde68a}
+.t-bad{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+.t-blue{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.t-gray{background:#f8fafc;color:#475569;border:1px solid #e2e8f0}
+.t-dark{background:#0f172a;color:#ffffff;border:1px solid #0f172a}
+.t-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
 .bar{height:7px;background:#edf0f4;border-radius:99px;overflow:hidden;min-width:60px}.bar i{display:block;height:100%;background:var(--pri)}.bar.g i{background:var(--ok)}.bar.r i{background:var(--bad)}
-.tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap;background:#edf2f7;padding:3px;border-radius:8px;border:1px solid #e2e8f0}
-.tabs button{border:0;background:transparent;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;color:#526071}
-.tabs button.on{background:#fff;color:var(--dark);box-shadow:0 1px 2px rgba(0,0,0,0.06)}
+.tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap;background:#f1f5f9;padding:3px;border-radius:8px;border:1px solid #e2e8f0}
+.tabs button{border:0;background:transparent;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;color:#64748b;transition:all .15s ease}
+.tabs button:hover{color:#0f172a}
+.tabs button.on{background:#ffffff;color:#0f172a;box-shadow:0 1px 3px rgba(15,23,42,0.08);font-weight:700}
 .action-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 12px}
 .action-group{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .f{display:grid;gap:9px;margin-bottom:11px}.f label{font-size:11.5px;color:var(--mut);display:grid;gap:3px;font-weight:500}.f input,.f select,.f textarea{width:100%}
@@ -93,11 +100,22 @@ tr.click{cursor:pointer}tr.click:hover{background:#f8fafc}
 .dash-stat-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#f8fafc;color:#2563eb;flex-shrink:0}
 .dash-stat-val{font-size:24px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;line-height:1.2;margin-bottom:6px}
 .dash-stat-foot{font-size:12px;color:#64748b;display:flex;align-items:center;gap:6px}
-.submod-card{border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;background:#fff;cursor:pointer;transition:all .2s ease;margin-bottom:10px}
-.submod-card:hover{border-color:#93c5fd;background:#f8fafc;box-shadow:0 4px 12px rgba(37,99,235,0.05);transform:translateY(-1px)}
-.flow-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 12px;border-radius:99px;background:#f1f5f9;color:#334155;white-space:nowrap}
-.flow-pill.done{background:#dcfce7;color:#15803d}
-.flow-pill.active{background:#fef08a;color:#854d0e}
+.submod-card{border:1px solid #e2e8f0;border-radius:10px;padding:15px 20px;display:flex;align-items:center;justify-content:space-between;background:#fff;cursor:pointer;transition:all .15s ease;margin-bottom:10px}
+.submod-card:hover{border-color:#cbd5e1;background:#f8fafc;box-shadow:0 2px 8px rgba(15,23,42,0.04);transform:translateY(-1px)}
+.proc-rail{display:flex;align-items:center;width:100%;gap:0;overflow-x:auto;padding:6px 0}
+.proc-step{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.proc-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.proc-dot.done{background:#ecfdf5;color:#047857;border:1.5px solid #10b981}
+.proc-dot.active{background:#0f172a;color:#ffffff;border:1.5px solid #0f172a;box-shadow:0 0 0 3px rgba(15,23,42,0.1)}
+.proc-info{display:flex;flex-direction:column;line-height:1.25}
+.proc-name{font-size:12px;font-weight:600;color:#1e293b;white-space:nowrap}
+.proc-code{font-size:10.5px;color:#64748b;font-weight:500;white-space:nowrap}
+.proc-line{flex:1;min-width:14px;max-width:34px;height:2px;background:#10b981;margin:0 8px;flex-shrink:0}
+.proc-line.pending{background:#e2e8f0}
+.btn-primary-action{background:#0f172a;color:#ffffff;border:1px solid #0f172a;font-weight:600;padding:8px 18px;font-size:12.5px;border-radius:6px;box-shadow:0 1px 3px rgba(15,23,42,0.12);display:inline-flex;align-items:center;gap:7px;cursor:pointer;transition:all .15s ease}
+.btn-primary-action:hover{background:#1e293b;border-color:#1e293b;transform:translateY(-1px);box-shadow:0 3px 8px rgba(15,23,42,0.18)}
+.btn-sec-action{background:#ffffff;color:#334155;border:1px solid #cbd5e1;font-weight:600;padding:8px 16px;font-size:12.5px;border-radius:6px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all .15s ease}
+.btn-sec-action:hover{background:#f8fafc;border-color:#94a3b8;color:#0f172a}
 @media(max-width:860px){aside{display:none}.two{grid-template-columns:1fr}}
 </style></head><body>
 
@@ -1047,59 +1065,119 @@ V.crm=()=>{
       </div>
     </div>
 
-    <!-- Featured Case Study Card: ABC Infrastructure Pvt. Ltd. (Executive Dossier Style) -->
-    <div class="card" style="border:1px solid #e2e8f0;border-left:4px solid #16a34a;background:#ffffff;margin-bottom:18px;padding:20px;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,0.03)">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px">
-        <div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-            <span class="tag" style="background:#0f172a;color:#fff;font-weight:700;font-size:11px">CASE STUDY</span>
-            <span class="tag t-ok" style="font-weight:700">TENDER AWARDED</span>
+    <!-- Featured Case Study Card: ABC Infrastructure Pvt. Ltd. (Executive Enterprise Style) -->
+    <div class="card" style="border:1px solid #e2e8f0;background:#ffffff;margin-bottom:18px;padding:22px 24px;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,0.04),0 1px 2px -1px rgba(15,23,42,0.02)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:18px">
+        <div style="max-width:680px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <span class="tag t-gray" style="font-weight:700;letter-spacing:0.04em">CASE STUDY</span>
+            <span class="tag t-ok"><span class="t-dot" style="background:#059669"></span> TENDER AWARDED</span>
             <span class="tag t-blue">COMMERCIAL G+8</span>
           </div>
-          <h2 style="font-size:18px;font-weight:700;color:#0f172a;margin:2px 0 4px">ABC Infrastructure Pvt. Ltd. – Visakhapatnam Commercial Hub (G+8)</h2>
-          <p class="mut" style="font-size:13px">Turnkey Civil, Structural RCC, MEP & Architectural Finishes • Plot 42, Harbour Road, Visakhapatnam • Client: Mr. Vikram Adani</p>
+          <h2 style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 6px;letter-spacing:-0.01em">ABC Infrastructure Pvt. Ltd. – Visakhapatnam Commercial Hub (G+8)</h2>
+          <p class="mut" style="font-size:13px;margin:0;line-height:1.4">Turnkey Civil, Structural RCC, MEP & Architectural Finishes • Plot 42, Harbour Road, Visakhapatnam • Client: Mr. Vikram Adani</p>
         </div>
-        <div style="text-align:right">
-          <small class="mut">Client Budget vs Awarded Bid</small>
-          <div style="font-size:22px;font-weight:700;color:#16a34a">₹4.85 Cr <small style="font-size:13px;color:#64748b;font-weight:400">(Budget: ₹5.00 Cr)</small></div>
-          <small style="color:#16a34a"><b>Gross Margin: 17.7%</b> (Est. Cost: ₹4.12 Cr)</small>
-        </div>
-      </div>
-
-      <!-- Modern Visual Stepper -->
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:16px">
-        <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:10px">End-to-End Business Acquisition & Execution Lifecycle</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;overflow-x:auto;padding-bottom:4px">
-          <div class="flow-pill done"><span>✓</span> 1. Lead (LD-101)</div>
-          <span style="color:#cbd5e1">➔</span>
-          <div class="flow-pill done"><span>✓</span> 2. Qualified</div>
-          <span style="color:#cbd5e1">➔</span>
-          <div class="flow-pill done"><span>✓</span> 3. Client (CL-101)</div>
-          <span style="color:#cbd5e1">➔</span>
-          <div class="flow-pill done"><span>✓</span> 4. Tender (T-2026-04)</div>
-          <span style="color:#cbd5e1">➔</span>
-          <div class="flow-pill done"><span>✓</span> 5. Bid (BID-101)</div>
-          <span style="color:#cbd5e1">➔</span>
-          <div class="flow-pill done"><span>✓</span> 6. LoA Awarded</div>
-          <span style="color:#cbd5e1">➔</span>
-          <div class="flow-pill ${abcOpp && abcOpp.converted_project_id ? 'done' : 'active'}">
-            <span>${abcOpp && abcOpp.converted_project_id ? '✓' : '⚡'}</span>
-            ${abcOpp && abcOpp.converted_project_id ? 'Active (' + abcOpp.converted_project_id + ')' : '7. Convert to Project'}
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 18px;text-align:right;min-width:230px">
+          <div style="font-size:10.5px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">Awarded Contract Value</div>
+          <div style="font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;line-height:1.1;margin-bottom:4px">
+            ₹4.85 Cr <small style="font-size:12px;color:#64748b;font-weight:500">(Budget: ₹5.00 Cr)</small>
+          </div>
+          <div style="font-size:11.5px;color:#047857;font-weight:600;display:inline-flex;align-items:center;gap:4px">
+            <span>Gross Margin: <b>17.7%</b> (Est. Cost: ₹4.12 Cr)</span>
           </div>
         </div>
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-        <div style="font-size:13px;color:#475569">
-          <b>Contract Status:</b> Letter of Award (LoA) signed. Mobilization advance BG accepted. Ready for site setup.
+      <!-- Connected Workflow Pipeline -->
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 18px;margin-bottom:18px">
+        <div style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px">End-to-End Business Acquisition & Execution Lifecycle</div>
+        <div class="proc-rail">
+          <div class="proc-step">
+            <div class="proc-dot done">✓</div>
+            <div class="proc-info">
+              <span class="proc-name">1. Lead</span>
+              <span class="proc-code">LD-101</span>
+            </div>
+          </div>
+          <div class="proc-line"></div>
+
+          <div class="proc-step">
+            <div class="proc-dot done">✓</div>
+            <div class="proc-info">
+              <span class="proc-name">2. Qualified</span>
+              <span class="proc-code">Commercial</span>
+            </div>
+          </div>
+          <div class="proc-line"></div>
+
+          <div class="proc-step">
+            <div class="proc-dot done">✓</div>
+            <div class="proc-info">
+              <span class="proc-name">3. Client</span>
+              <span class="proc-code">CL-101</span>
+            </div>
+          </div>
+          <div class="proc-line"></div>
+
+          <div class="proc-step">
+            <div class="proc-dot done">✓</div>
+            <div class="proc-info">
+              <span class="proc-name">4. Tender</span>
+              <span class="proc-code">T-2026-04</span>
+            </div>
+          </div>
+          <div class="proc-line"></div>
+
+          <div class="proc-step">
+            <div class="proc-dot done">✓</div>
+            <div class="proc-info">
+              <span class="proc-name">5. Bid</span>
+              <span class="proc-code">BID-101</span>
+            </div>
+          </div>
+          <div class="proc-line"></div>
+
+          <div class="proc-step">
+            <div class="proc-dot done">✓</div>
+            <div class="proc-info">
+              <span class="proc-name">6. LoA Awarded</span>
+              <span class="proc-code">Approved</span>
+            </div>
+          </div>
+          <div class="proc-line ${abcOpp && abcOpp.converted_project_id ? '' : 'pending'}"></div>
+
+          <div class="proc-step">
+            <div class="proc-dot ${abcOpp && abcOpp.converted_project_id ? 'done' : 'active'}">
+              ${abcOpp && abcOpp.converted_project_id ? '✓' : '⚡'}
+            </div>
+            <div class="proc-info">
+              <span class="proc-name" style="${abcOpp && abcOpp.converted_project_id ? 'color:#047857' : 'color:#0f172a;font-weight:700'}">
+                ${abcOpp && abcOpp.converted_project_id ? '7. Converted' : '7. Convert'}
+              </span>
+              <span class="proc-code">
+                ${abcOpp && abcOpp.converted_project_id ? abcOpp.converted_project_id : 'Active WBS'}
+              </span>
+            </div>
+          </div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+        <div style="font-size:12.5px;color:#334155;display:flex;align-items:center;gap:8px">
+          <span style="color:#059669;font-size:12px">●</span>
+          <span><b>Contract Status:</b> Letter of Award (LoA) signed • Mobilization advance BG accepted • Ready for site setup.</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
           ${abcOpp && abcOpp.converted_project_id ? `
-            <button class="btn ok" onclick="openProject('${abcOpp.converted_project_id}')" style="font-weight:700;padding:9px 18px">✓ Open Project ${abcOpp.converted_project_id} in Project Management →</button>
+            <button class="btn-primary-action" onclick="openProject('${abcOpp.converted_project_id}')">
+              <span>✓</span> Open Project ${abcOpp.converted_project_id} in Project Management →
+            </button>
           ` : `
-            <button class="btn ok" onclick="convertProjectModal('${abcOpp ? abcOpp.id : 'OPP-101'}')" style="font-weight:700;padding:9px 20px;font-size:13px">⚡ 1-Click Convert to Active Project with 12-Stage WBS</button>
+            <button class="btn-primary-action" onclick="convertProjectModal('${abcOpp ? abcOpp.id : 'OPP-101'}')">
+              <span style="color:#facc15">⚡</span> 1-Click Convert to Active Project with 12-Stage WBS
+            </button>
           `}
-          <button class="btn sec" onclick="viewBOQModal('BID-101')">View BOQ Breakdown</button>
+          <button class="btn-sec-action" onclick="viewBOQModal('BID-101')">View BOQ Breakdown</button>
         </div>
       </div>
     </div>
