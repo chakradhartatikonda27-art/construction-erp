@@ -587,6 +587,114 @@ async function requestHandler(req, res) {
         return sendJSON(res, { ok: true, state: dbLayer.getFullState() });
       }
 
+      // 25b. Tender Create
+      if (pathname === '/api/tenders' && req.method === 'POST') {
+        const b = await parseJSON(req);
+        const tId = 'T-' + Math.floor(1000 + Math.random() * 9000);
+        dbLayer.db.prepare('INSERT INTO tenders (id, title, client, type, val, emd, sub_date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .run(tId, b.title, b.client, b.type || 'Commercial EPC', b.val || 0, b.emd || 0, b.sub_date, b.status || 'Bidding', b.notes || '');
+        dbLayer.logAudit(`Tender created: ${b.title}`);
+        return sendJSON(res, { ok: true, id: tId, state: dbLayer.getFullState() });
+      }
+
+      // 25c. Drawing Upload
+      if (pathname === '/api/drawings' && req.method === 'POST') {
+        const b = await parseJSON(req);
+        const dId = 'DWG-' + Math.floor(100 + Math.random() * 900);
+        const today = dbLayer.getConfig('today');
+        dbLayer.db.prepare('INSERT INTO drawings (id, project_id, dwg_no, title, disc, rev, status, d) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+          .run(dId, b.projectId, b.dwgNo, b.title, b.disc, b.rev || 'R0', b.status || 'Approved for Construction', today);
+        dbLayer.logAudit(`Drawing added: ${b.dwgNo} (${b.title})`, b.projectId);
+        return sendJSON(res, { ok: true, id: dId, state: dbLayer.getFullState() });
+      }
+
+      // 25d. Equipment Add / Update
+      if (pathname === '/api/equipment' && req.method === 'POST') {
+        const b = await parseJSON(req);
+        const eqId = b.id || ('EQ-' + Math.floor(10 + Math.random() * 90));
+        dbLayer.db.prepare('INSERT OR REPLACE INTO equipment (id, name, code, type, project_id, status, hours, fuel_cap, op_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .run(eqId, b.name, b.code, b.type, b.projectId, b.status || 'Active', b.hours || 0, b.fuelCap || 0, b.opName || '');
+        dbLayer.logAudit(`Equipment registered: ${b.name} (${b.code})`, b.projectId);
+        return sendJSON(res, { ok: true, id: eqId, state: dbLayer.getFullState() });
+      }
+
+      // 25e. Fuel Log
+      if (pathname === '/api/equipment/fuel' && req.method === 'POST') {
+        const b = await parseJSON(req);
+        const fId = 'FL-' + Math.floor(100 + Math.random() * 900);
+        const today = dbLayer.getConfig('today');
+        dbLayer.db.prepare('INSERT INTO fuel_logs (id, eq_id, project_id, d, liters, cost, hours, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+          .run(fId, b.eqId, b.projectId, today, b.liters, b.cost || (b.liters * 95), b.hours || 0, b.notes || '');
+        dbLayer.logAudit(`Fuel logged: ${b.liters}L for ${b.eqId}`, b.projectId);
+        return sendJSON(res, { ok: true, id: fId, state: dbLayer.getFullState() });
+      }
+
+      // 25f. Contract Create / RA Bill
+      if (pathname === '/api/contracts' && req.method === 'POST') {
+        const b = await parseJSON(req);
+        const cId = 'SC-' + Math.floor(100 + Math.random() * 900);
+        dbLayer.db.prepare('INSERT INTO contracts_tbl (id, project_id, vendor_name, scope, val, ra_billed, retention, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+          .run(cId, b.projectId, b.vendorName, b.scope, b.val, b.raBilled || 0, b.retention || 0, b.status || 'Active');
+        dbLayer.logAudit(`Subcontract created: ${b.vendorName} - ${b.scope}`, b.projectId);
+        return sendJSON(res, { ok: true, id: cId, state: dbLayer.getFullState() });
+      }
+
+      if (pathname === '/api/contracts/ra-bill' && req.method === 'POST') {
+        const b = await parseJSON(req);
+        const contract = dbLayer.db.prepare('SELECT * FROM contracts_tbl WHERE id = ?').get(b.contractId);
+        if (contract) {
+          const newBilled = contract.ra_billed + b.billAmt;
+          const newRet = contract.retention + (b.billAmt * 0.05);
+          dbLayer.db.prepare('UPDATE contracts_tbl SET ra_billed = ?, retention = ? WHERE id = ?').run(newBilled, newRet, b.contractId);
+          dbLayer.logAudit(`RA Bill recorded: ₹${Math.round(b.billAmt).toLocaleString('en-IN')} for ${contract.vendor_name}`, contract.project_id);
+        }
+        return sendJSON(res, { ok: true, state: dbLayer.getFullState() });
+      }
+
+      // 25g. NCR Create / Resolve
+      if (pathname === '/api/qa/ncr' && req.method === 'POST') {
+        const b = await parseJSON(req);
+        const nId = b.id || ('NCR-' + Math.floor(10 + Math.random() * 90));
+        const today = dbLayer.getConfig('today');
+        if (b.action === 'resolve') {
+          dbLayer.db.prepare('UPDATE ncr_records SET status = "Closed", action = ? WHERE id = ?').run(b.resolution || 'Resolved & verified by QA', b.id);
+          dbLayer.logAudit(`NCR ${b.id} closed`);
+        } else {
+          dbLayer.db.prepare('INSERT INTO ncr_records (id, project_id, stage_k, title, severity, status, d, action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+            .run(nId, b.projectId, b.stageK || 0, b.title, b.severity || 'Medium', 'Open', today, b.action || '');
+          dbLayer.logAudit(`NCR raised: ${b.title}`, b.projectId);
+        }
+        return sendJSON(res, { ok: true, id: nId, state: dbLayer.getFullState() });
+      }
+
+      // 25h. Documents
+      if (pathname === '/api/documents' && req.method === 'POST') {
+        const b = await parseJSON(req);
+        const docId = b.id || ('DOC-' + Math.floor(10 + Math.random() * 90));
+        const today = dbLayer.getConfig('today');
+        const meUser = dbLayer.db.prepare('SELECT name FROM users WHERE id = ?').get(dbLayer.getConfig('me'));
+        dbLayer.db.prepare('INSERT INTO documents_tbl (id, project_id, title, cat, rev, status, uploaded_by, d) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+          .run(docId, b.projectId, b.title, b.cat || 'General', b.rev || 'R1', b.status || 'Approved', (meUser ? meUser.name : 'Staff'), today);
+        dbLayer.logAudit(`Document uploaded: ${b.title}`, b.projectId);
+        return sendJSON(res, { ok: true, id: docId, state: dbLayer.getFullState() });
+      }
+
+      // 25i. Snagging
+      if (pathname === '/api/snags' && req.method === 'POST') {
+        const b = await parseJSON(req);
+        const sId = b.id || ('SNG-' + Math.floor(10 + Math.random() * 90));
+        const today = dbLayer.getConfig('today');
+        if (b.action === 'resolve') {
+          dbLayer.db.prepare('UPDATE handover_snags SET status = "Resolved" WHERE id = ?').run(b.id);
+          dbLayer.logAudit(`Snag ${b.id} resolved`, b.projectId);
+        } else {
+          dbLayer.db.prepare('INSERT INTO handover_snags (id, project_id, unit_num, desc, severity, status, due_date, assigned_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+            .run(sId, b.projectId, b.unitNum, b.desc, b.severity || 'Low', 'Open', b.dueDate || dbLayer.addDays(today, 5), b.assignedTo || 'Site Supervisor');
+          dbLayer.logAudit(`Snag logged: Unit ${b.unitNum} - ${b.desc}`, b.projectId);
+        }
+        return sendJSON(res, { ok: true, id: sId, state: dbLayer.getFullState() });
+      }
+
       // 26. WhatsApp Action
       if (pathname === '/api/whatsapp/action' && req.method === 'POST') {
         const body = await parseJSON(req);

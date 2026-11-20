@@ -274,6 +274,96 @@ function initSchema() {
       act TEXT,
       status TEXT DEFAULT ''
     );
+
+    CREATE TABLE IF NOT EXISTS tenders (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      client TEXT NOT NULL,
+      type TEXT NOT NULL,
+      val REAL NOT NULL,
+      emd REAL NOT NULL,
+      sub_date TEXT NOT NULL,
+      status TEXT NOT NULL,
+      notes TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS drawings (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      dwg_no TEXT NOT NULL,
+      title TEXT NOT NULL,
+      disc TEXT NOT NULL,
+      rev TEXT NOT NULL,
+      status TEXT NOT NULL,
+      d TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS equipment (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      code TEXT NOT NULL,
+      type TEXT NOT NULL,
+      project_id TEXT,
+      status TEXT NOT NULL,
+      hours REAL DEFAULT 0,
+      fuel_cap REAL DEFAULT 0,
+      op_name TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS fuel_logs (
+      id TEXT PRIMARY KEY,
+      eq_id TEXT NOT NULL,
+      project_id TEXT NOT NULL,
+      d TEXT NOT NULL,
+      liters REAL NOT NULL,
+      cost REAL NOT NULL,
+      hours REAL NOT NULL,
+      notes TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS contracts_tbl (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      vendor_name TEXT NOT NULL,
+      scope TEXT NOT NULL,
+      val REAL NOT NULL,
+      ra_billed REAL NOT NULL DEFAULT 0,
+      retention REAL NOT NULL DEFAULT 0,
+      status TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS ncr_records (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      stage_k INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      severity TEXT NOT NULL,
+      status TEXT NOT NULL,
+      d TEXT NOT NULL,
+      action TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS documents_tbl (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      cat TEXT NOT NULL,
+      rev TEXT NOT NULL,
+      status TEXT NOT NULL,
+      uploaded_by TEXT NOT NULL,
+      d TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS handover_snags (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      unit_num TEXT NOT NULL,
+      desc TEXT NOT NULL,
+      severity TEXT NOT NULL,
+      status TEXT NOT NULL,
+      due_date TEXT NOT NULL,
+      assigned_to TEXT NOT NULL
+    );
   `);
 }
 
@@ -400,6 +490,14 @@ function seedDatabase() {
     DELETE FROM hse;
     DELETE FROM units;
     DELETE FROM wa_messages;
+    DELETE FROM tenders;
+    DELETE FROM drawings;
+    DELETE FROM equipment;
+    DELETE FROM fuel_logs;
+    DELETE FROM contracts_tbl;
+    DELETE FROM ncr_records;
+    DELETE FROM documents_tbl;
+    DELETE FROM handover_snags;
   `);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -607,6 +705,60 @@ function seedDatabase() {
   db.prepare('INSERT INTO hse (project_id, d, type, desc, by_uid) VALUES (?, ?, ?, ?, ?)')
     .run('P004', addDays(today, -2), 'PPE violation', 'Two workers without helmets – counselled', 'u4');
 
+  // Tenders
+  const insertTender = db.prepare('INSERT INTO tenders (id, title, client, type, val, emd, sub_date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  insertTender.run('T-2026-01', 'Govt Secretariat IT Tower Phase 2', 'AP CRDA', 'Commercial EPC', 145000000, 1450000, addDays(today, 25), 'Bidding', 'Technical bid pre-qualification document under review');
+  insertTender.run('T-2026-02', 'Smart City Water Distribution Network', 'GVMC Vizag', 'Infrastructure', 48000000, 480000, addDays(today, 8), 'Submitted', 'EMD submitted via Bank Guarantee. Commercial bid opens Friday');
+  insertTender.run('T-2026-03', 'Highway Flyover & Underpass Junction', 'NHAI', 'Infrastructure', 92000000, 920000, addDays(today, 15), 'Evaluation', 'L1 bidder shortlisted. Awaiting letter of intent (LOI)');
+
+  // Drawings
+  const insertDwg = db.prepare('INSERT INTO drawings (id, project_id, dwg_no, title, disc, rev, status, d) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  insertDwg.run('DWG-01', 'P003', 'P003-ARC-101', 'Typical Floor Architectural Layout', 'Architectural', 'R2', 'Approved for Construction', addDays(today, -30));
+  insertDwg.run('DWG-02', 'P003', 'P003-STR-201', 'Foundation & Column Shear Wall Details', 'Structural', 'R3', 'Approved for Construction', addDays(today, -20));
+  insertDwg.run('DWG-03', 'P003', 'P003-MEP-301', 'Electrical Conduit & Fire Hydrant Routing', 'MEP', 'R1', 'In Review', addDays(today, -5));
+  insertDwg.run('DWG-04', 'P002', 'P002-STR-104', 'Slab Reinforcement & Beam Schedule', 'Structural', 'R1', 'Approved for Construction', addDays(today, -45));
+  insertDwg.run('DWG-05', 'P004', 'P004-ARC-002', 'Basement Parking & Ramp Sections', 'Architectural', 'R0', 'Approved for Construction', addDays(today, -15));
+
+  // Equipment
+  const insertEq = db.prepare('INSERT INTO equipment (id, name, code, type, project_id, status, hours, fuel_cap, op_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  insertEq.run('EQ-01', 'Liebherr Tower Crane 40T', 'TC-401', 'Tower Crane', 'P003', 'Active', 1420, 250, 'Ramanathan (Certified Operator)');
+  insertEq.run('EQ-02', 'Schwing Stetter Batching Plant M1', 'BP-102', 'Batching Plant', 'P003', 'Active', 980, 400, 'K. Jagannath');
+  insertEq.run('EQ-03', 'Putzmeister Boom Pump 36m', 'CP-05', 'Concrete Pump', 'P002', 'Maintenance', 640, 180, 'S. Murthy');
+  insertEq.run('EQ-04', 'JCB 3DX EcoXcellence Excavator', 'EX-22', 'Excavator', 'P003', 'Active', 2150, 150, 'G. Naidu');
+  insertEq.run('EQ-05', 'Volvo Transit Mixer 7m³', 'TM-08', 'Transit Mixer', 'P004', 'Active', 1890, 200, 'B. Srinivas');
+  insertEq.run('EQ-06', 'Kirloskar DG Genset 125 kVA', 'DG-03', 'Generator', 'P003', 'Active', 850, 120, 'Site Electrician');
+
+  // Fuel Logs
+  const insertFuel = db.prepare('INSERT INTO fuel_logs (id, eq_id, project_id, d, liters, cost, hours, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  insertFuel.run('FL-01', 'EQ-04', 'P003', addDays(today, -1), 85, 8075, 7.5, 'Foundation trench excavation works');
+  insertFuel.run('FL-02', 'EQ-01', 'P003', addDays(today, -2), 60, 5700, 8.0, 'Material lifting for 3rd floor slab shuttering');
+  insertFuel.run('FL-03', 'EQ-06', 'P003', addDays(today, -3), 45, 4275, 5.0, 'Grid power outage backup during concrete pour');
+
+  // Contracts
+  const insertContract = db.prepare('INSERT INTO contracts_tbl (id, project_id, vendor_name, scope, val, ra_billed, retention, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  insertContract.run('SC-101', 'P003', 'Sri Laxmi Earthmovers', 'Deep Excavation, Shoring & Dewatering', 4200000, 3800000, 190000, 'Active');
+  insertContract.run('SC-102', 'P003', 'Apex Bar Bending Works', 'Structural Steel Binding & BBS Fabrication', 6500000, 2600000, 130000, 'Active');
+  insertContract.run('SC-103', 'P003', 'Deccan Electricals EPC', 'Internal Conduit, Wiring & Panel Board', 3100000, 800000, 40000, 'Active');
+  insertContract.run('SC-104', 'P002', 'Megha Flooring & Tiling', 'Vitrified & Granite Tile Installation', 2800000, 2100000, 105000, 'Active');
+
+  // NCR Records
+  const insertNCR = db.prepare('INSERT INTO ncr_records (id, project_id, stage_k, title, severity, status, d, action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  insertNCR.run('NCR-01', 'P003', 3, 'Honeycombing in Column C3 starter', 'Medium', 'Closed', addDays(today, -12), 'Chipped to sound concrete & micro-concrete grouting certified by structural consultant');
+  insertNCR.run('NCR-02', 'P003', 4, 'Cube 7-day test strength variation (Batch #42)', 'High', 'Under Review', addDays(today, -3), 'Core extraction test ordered as per IS 516 protocol');
+
+  // Documents & Approvals
+  const insertDoc = db.prepare('INSERT INTO documents_tbl (id, project_id, title, cat, rev, status, uploaded_by, d) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  insertDoc.run('DOC-01', 'P003', 'Contract Agreement & Scope Schedule', 'Legal', 'R1', 'Approved', 'Mohan S. (Owner)', addDays(today, -80));
+  insertDoc.run('DOC-02', 'P003', 'Soil Geotechnical Investigation Report', 'Engineering', 'Final', 'Approved', 'Sita Devi (QA)', addDays(today, -75));
+  insertDoc.run('DOC-03', 'P003', 'Environmental Clearance & Fire NOC', 'Statutory', 'V2', 'Approved', 'Ravi Kumar (PM)', addDays(today, -60));
+  insertDoc.run('DOC-04', 'P003', 'Batching Plant Calibration Certificate', 'Quality', '2026-Q4', 'Approved', 'Sita Devi (QA)', addDays(today, -10));
+
+  // Handover & Snagging
+  const insertSnag = db.prepare('INSERT INTO handover_snags (id, project_id, unit_num, desc, severity, status, due_date, assigned_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  insertSnag.run('SNG-01', 'P002', '201', 'Minor hairline paint crack above balcony door', 'Low', 'Resolved', addDays(today, -5), 'Suresh (Supervisor)');
+  insertSnag.run('SNG-02', 'P002', '304', 'Master bathroom mixer tap pressure low', 'Medium', 'Open', addDays(today, 2), 'Plumbing Contractor');
+  insertSnag.run('SNG-03', 'P002', '402', 'Main entry door lock latch alignment required', 'Low', 'Open', addDays(today, 3), 'Carpentry Gang');
+
   // WhatsApp Messages
   sendWA('owner', `📊 Daily summary ${today}\n• Projects: 5 (1 delayed)\n• Present today: 24\n• Cost to date: ₹2.4 Cr\n• Pending approvals: 3\n• Alerts: 2`);
 }
@@ -747,6 +899,15 @@ function getFullState() {
     st: w.status
   }));
 
+  const tenders = db.prepare('SELECT * FROM tenders ORDER BY rowid ASC').all();
+  const drawings = db.prepare('SELECT * FROM drawings ORDER BY rowid ASC').all();
+  const equipment = db.prepare('SELECT * FROM equipment ORDER BY rowid ASC').all();
+  const fuelLogs = db.prepare('SELECT * FROM fuel_logs ORDER BY rowid DESC').all();
+  const contracts = db.prepare('SELECT * FROM contracts_tbl ORDER BY rowid ASC').all();
+  const ncrs = db.prepare('SELECT * FROM ncr_records ORDER BY rowid DESC').all();
+  const documents = db.prepare('SELECT * FROM documents_tbl ORDER BY rowid ASC').all();
+  const snags = db.prepare('SELECT * FROM handover_snags ORDER BY rowid ASC').all();
+
   return {
     today,
     me,
@@ -765,14 +926,24 @@ function getFullState() {
     log: logRows,
     hse,
     units,
-    wa
+    wa,
+    tenders,
+    drawings,
+    equipment,
+    fuelLogs,
+    contracts,
+    ncrs,
+    documents,
+    snags
   };
 }
 
 // Check if database needs initial seeding
 initSchema();
 const projCount = db.prepare('SELECT COUNT(*) as c FROM projects').get().c;
-if (projCount === 0) {
+const tenderCount = db.prepare('SELECT COUNT(*) as c FROM tenders').get().c;
+const docCount = db.prepare('SELECT COUNT(*) as c FROM documents_tbl').get().c;
+if (projCount === 0 || tenderCount === 0 || docCount === 0) {
   seedDatabase();
 }
 
