@@ -86,6 +86,18 @@ tr.click{cursor:pointer}tr.click:hover{background:#f8fafc}
 #rb{display:inline-flex;background:#edf0f4;border-radius:99px;padding:2px;gap:2px;flex-wrap:wrap}
 #rb button{border:0;background:transparent;border-radius:99px;padding:4px 9px;cursor:pointer;font-size:11px;font-weight:600;color:#475569;white-space:nowrap}
 #rb button:hover{color:var(--ink)}#rb button.on{background:var(--dark);color:#fff}
+.dash-stat{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 1px 3px rgba(15,23,42,0.03);transition:all .15s ease}
+.dash-stat:hover{box-shadow:0 4px 12px rgba(15,23,42,0.06);transform:translateY(-1px)}
+.dash-stat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.dash-stat-label{font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.03em}
+.dash-stat-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#f8fafc;color:#2563eb;flex-shrink:0}
+.dash-stat-val{font-size:24px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;line-height:1.2;margin-bottom:6px}
+.dash-stat-foot{font-size:12px;color:#64748b;display:flex;align-items:center;gap:6px}
+.submod-card{border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;background:#fff;cursor:pointer;transition:all .2s ease;margin-bottom:10px}
+.submod-card:hover{border-color:#93c5fd;background:#f8fafc;box-shadow:0 4px 12px rgba(37,99,235,0.05);transform:translateY(-1px)}
+.flow-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 12px;border-radius:99px;background:#f1f5f9;color:#334155;white-space:nowrap}
+.flow-pill.done{background:#dcfce7;color:#15803d}
+.flow-pill.active{background:#fef08a;color:#854d0e}
 @media(max-width:860px){aside{display:none}.two{grid-template-columns:1fr}}
 </style></head><body>
 
@@ -612,101 +624,323 @@ const V={};
    MODULE 1: DASHBOARD
    ============================================================== */
 V.dash=()=>{
-  const v=vis(), pe=pending(), act=v.filter(p=>p.status==='In Progress').length;
-  const tot=v.reduce((a,p)=>a+p.contract,0), spent=v.reduce((a,p)=>a+actual(p),0);
-  const inv=S.inv.filter(i=>v.find(p=>p.id===i.pid)), out=inv.filter(i=>i.st==='Pending').reduce((a,i)=>a+i.amt,0);
-  const todayCount=S.att.filter(a=>a.d===S.today&&v.find(p=>p.id===a.pid)&&a.pres).length;
+  const v = vis();
+  const pe = pending();
+  const act = v.filter(p => p.status === 'In Progress').length;
+  const tot = v.reduce((a, p) => a + p.contract, 0);
+  const spent = v.reduce((a, p) => a + actual(p), 0);
+  const inv = S.inv.filter(i => v.find(p => p.id === i.pid));
+  const out = inv.filter(i => i.st === 'Pending').reduce((a, i) => a + i.amt, 0);
+  const todayCount = S.att.filter(a => a.d === S.today && v.find(p => p.id === a.pid) && a.pres).length;
   const tab = getTab('dash', 'exec');
 
   return `
   ${tabNav('dash', [
-    ['exec','Executive Dashboard'],
-    ['kpis','Project KPIs & S-Curve'],
-    ['alerts','Critical Alerts & Approvals'],
-    ['quick','Quick Workflow Launch']
+    ['exec', 'Executive Overview'],
+    ['kpis', 'Portfolio Performance & S-Curve'],
+    ['alerts', 'Alerts & Approvals (' + pe.length + ')'],
+    ['quick', 'Quick Actions']
   ])}
 
-  ${tab==='exec'?`
-    <div class="grid kpis">
-      ${kpi('Active Projects',v.length,act+' In Construction')}
-      ${kpi('Total Contract Value',mn(tot),'Portfolio sum')}
-      ${kpi('Actual Incurred Cost',mn(spent),tot?Math.round(spent/tot*100)+'% of contract':'')}
-      ${kpi('Outstanding RA Bills',mn(out),'Client receivables')}
-      ${kpi('On-site Labor Today',todayCount,'Staff & contractors')}
-    </div>
-    <div class="grid two">
-      <div class="card">
-        <h3>My Action Items (${ROLES[me().role]}) <span>${pe.length?`<span class="tag t-warn">${pe.length} Action(s)</span>`:''}</span></h3>
-        ${pe.length?pe.map(x=>`<div class="log"><a style="cursor:pointer;color:var(--pri);font-weight:600" onclick="go('${x[0]}')">${x[1]} →</a></div>`).join(''):'<p class="mut">All items up to date for your role.</p>'}
+  ${tab === 'exec' ? `
+    <!-- Top Executive KPIs -->
+    <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:16px">
+      <div class="dash-stat">
+        <div class="dash-stat-top">
+          <span class="dash-stat-label">Active Order Book</span>
+          <div class="dash-stat-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          </div>
+        </div>
+        <div class="dash-stat-val">${mn(tot)}</div>
+        <div class="dash-stat-foot">
+          <span class="tag t-blue">${v.length} Projects Total</span>
+          <span>${act} in active construction</span>
+        </div>
       </div>
-      <div class="card">
-        <h3>Project Portfolio Status <button class="btn sec sm" onclick="go('proj')">View All Projects →</button></h3>
-        <table><tbody>
-          ${v.map(p=>`<tr class="click" onclick="S.ap='${p.id}';go('pd','${p.id}')">
-            <td><b>${p.name}</b><br><small class="mut">${p.city} · ${p.type}</small></td>
-            <td style="width:100px">${bar(stageProgress(p))}<small>${stageProgress(p).toFixed(0)}% Done</small></td>
-            <td>${tag(p.status)}</td>
-          </tr>`).join('')}
-        </tbody></table>
-      </div>
-    </div>
-    <div class="card">
-      <h3>Live SQLite Audit Log</h3>
-      ${S.log.slice(0,6).map(l=>`<div class="log"><b>${l.msg}</b><br><small class="mut">${l.u} · ${l.d} · ${l.pid||'System'}</small></div>`).join('')}
-    </div>
-  `:''}
 
-  ${tab==='kpis'?`
+      <div class="dash-stat">
+        <div class="dash-stat-top">
+          <span class="dash-stat-label">Incurred Cost</span>
+          <div class="dash-stat-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          </div>
+        </div>
+        <div class="dash-stat-val">${mn(spent)}</div>
+        <div class="dash-stat-foot">
+          <span class="tag t-ok">CPI 1.04</span>
+          <span>${tot ? Math.round(spent/tot*100) : 0}% contract consumed</span>
+        </div>
+      </div>
+
+      <div class="dash-stat">
+        <div class="dash-stat-top">
+          <span class="dash-stat-label">Outstanding Receivables</span>
+          <div class="dash-stat-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+          </div>
+        </div>
+        <div class="dash-stat-val">${mn(out)}</div>
+        <div class="dash-stat-foot">
+          <span class="tag t-warn">${inv.filter(i=>i.st==='Pending').length} Pending Bills</span>
+          <span>Client payment due</span>
+        </div>
+      </div>
+
+      <div class="dash-stat">
+        <div class="dash-stat-top">
+          <span class="dash-stat-label">On-Site Labor Today</span>
+          <div class="dash-stat-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          </div>
+        </div>
+        <div class="dash-stat-val">${todayCount}</div>
+        <div class="dash-stat-foot">
+          <span class="tag t-ok">Present Today</span>
+          <span>Staff & Contractors</span>
+        </div>
+      </div>
+
+      <div class="dash-stat">
+        <div class="dash-stat-top">
+          <span class="dash-stat-label">Schedule Performance</span>
+          <div class="dash-stat-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          </div>
+        </div>
+        <div class="dash-stat-val">SPI 0.96</div>
+        <div class="dash-stat-foot">
+          <span class="tag t-ok">94.2% On Track</span>
+          <span>Minor weather impact</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Overview Row -->
+    <div class="grid two" style="margin-bottom:16px">
+      <!-- Project Portfolio Performance -->
+      <div class="card" style="margin:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <h3 style="margin:0;font-size:15px">Active Project Execution</h3>
+            <small class="mut">Progress, budget utilization, and schedule status</small>
+          </div>
+          <button class="btn sm sec" onclick="go('proj')">View All Projects →</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Project</th><th>Progress</th><th class="num">Spent / Contract</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            ${v.map(p => {
+              const prog = stageProgress(p);
+              const sp = actual(p);
+              return `
+              <tr class="click" onclick="S.ap='${p.id}';go('pd','${p.id}')">
+                <td>
+                  <b>${p.name}</b><br>
+                  <small class="mut">${p.city} • ${p.type} • ${p.floors} Floors</small>
+                </td>
+                <td style="width:130px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div class="bar" style="flex:1"><i style="width:${Math.min(100, Math.round(prog))}%"></i></div>
+                    <small><b>${prog.toFixed(0)}%</b></small>
+                  </div>
+                </td>
+                <td class="num">
+                  <b>${mn(sp)}</b><br>
+                  <small class="mut">of ${mn(p.contract)}</small>
+                </td>
+                <td>${tag(p.status)}</td>
+              </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Action Items & Alerts -->
+      <div class="card" style="margin:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <h3 style="margin:0;font-size:15px">Pending Management Actions</h3>
+            <small class="mut">Role-based tasks awaiting review or sign-off</small>
+          </div>
+          <span class="tag ${pe.length ? 't-warn' : 't-ok'}">${pe.length} Action(s) Required</span>
+        </div>
+        ${pe.length ? `
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${pe.map(x => `
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f8fafc;border:1px solid var(--line);border-radius:8px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#f08c00"></span>
+                  <span style="font-weight:600;font-size:13px">${x[1]}</span>
+                </div>
+                <button class="btn sm sec" onclick="go('${x[0]}')">Review →</button>
+              </div>
+            `).join('')}
+          </div>
+        ` : `
+          <div style="padding:24px;text-align:center;color:#64748b;background:#f8fafc;border-radius:8px">
+            <div style="font-size:28px;margin-bottom:6px">✓</div>
+            <b>All actions up to date</b>
+            <p style="font-size:12px;margin-top:2px">No pending approvals or overdue items for your role.</p>
+          </div>
+        `}
+
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <b style="font-size:13px">Critical Operations Watchlist</b>
+            <span class="mut" style="font-size:11.5px">Real-time alerts</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:#fff5f5;border-radius:6px;color:#c92a2a">
+              <span>⚠️ P003 Column C3 Starter Honeycombing (NCR-01 under remediation)</span>
+              <button class="btn sm sec" onclick="go('qa')">Inspect</button>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:#f3f0ff;border-radius:6px;color:#5f3dc4">
+              <span>📄 2 Purchase Indents awaiting MD commercial authorization</span>
+              <button class="btn sm sec" onclick="go('proc')">Approve</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Operations Launchpad -->
     <div class="card">
-      <h3>Enterprise S-Curve & Performance Metrics</h3>
-      <div style="background:#f8fafc;padding:15px;border-radius:9px;border:1px solid #e2e8f0;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <h3 style="margin:0;font-size:15px">Daily Operations Launchpad</h3>
+          <small class="mut">Frequently accessed actions across active sites</small>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">
+        <button class="btn" style="justify-content:center;padding:12px 14px" onclick="newProj()">+ New Project</button>
+        <button class="btn ok" style="justify-content:center;padding:12px 14px" onclick="go('site');setTab('site','dpr')">+ Submit DPR</button>
+        <button class="btn sec" style="justify-content:center;padding:12px 14px" onclick="go('proc');setTab('proc','indent')">+ Material Indent</button>
+        <button class="btn sec" style="justify-content:center;padding:12px 14px" onclick="go('site');setTab('site','muster')">Daily Attendance</button>
+        <button class="btn sec" style="justify-content:center;padding:12px 14px" onclick="go('qa');setTab('qa','ncr')">+ Raise NCR</button>
+        <button class="btn sec" style="justify-content:center;padding:12px 14px" onclick="go('crm');setTab('crm','tenders')">+ Tender Bid</button>
+      </div>
+    </div>
+  ` : ''}
+
+  ${tab === 'kpis' ? `
+    <div class="card">
+      <h3>Enterprise S-Curve & Cumulative Performance</h3>
+      <p class="mut" style="margin-bottom:12px">Planned Baseline Progress vs Actual Construction Expenditure & Deliveries</p>
+      <div style="background:#f8fafc;padding:18px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:14px">
         <svg viewBox="0 0 700 180" style="width:100%;height:180px">
           <line x1="50" y1="150" x2="680" y2="150" stroke="#cbd5e1" stroke-width="1.5"/>
           <line x1="50" y1="20" x2="50" y2="150" stroke="#cbd5e1" stroke-width="1.5"/>
           <path d="M50 150 Q 250 130, 360 80 T 680 25" fill="none" stroke="#94a3b8" stroke-width="3" stroke-dasharray="5,4"/>
-          <path d="M50 150 Q 230 140, 350 95" fill="none" stroke="#e8590c" stroke-width="3.5"/>
-          <line x1="350" y1="20" x2="350" y2="150" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="3,3"/>
-          <text x="355" y="40" fill="#2563eb" font-size="11" font-weight="bold">Today (${S.today})</text>
-          <text x="60" y="30" fill="#94a3b8" font-size="11">Planned S-Curve</text>
-          <text x="260" y="115" fill="#e8590c" font-size="11" font-weight="bold">Actual S-Curve</text>
+          <path d="M50 150 Q 230 140, 350 95" fill="none" stroke="#2563eb" stroke-width="3.5"/>
+          <line x1="350" y1="20" x2="350" y2="150" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="355" y="40" fill="#16a34a" font-size="11" font-weight="bold">Today (${S.today})</text>
+          <text x="60" y="30" fill="#94a3b8" font-size="11">Planned Baseline S-Curve</text>
+          <text x="240" y="115" fill="#2563eb" font-size="11" font-weight="bold">Actual Incurred Progress</text>
         </svg>
       </div>
       <div class="grid two">
-        <div class="card" style="margin:0"><h4>Cost Performance Index (CPI)</h4><p style="font-size:24px;font-weight:700;color:var(--ok)">1.04 <small style="font-size:12px;font-weight:normal;color:var(--mut)">(Favorable budget variance)</small></p></div>
-        <div class="card" style="margin:0"><h4>Schedule Performance Index (SPI)</h4><p style="font-size:24px;font-weight:700;color:var(--warn)">0.96 <small style="font-size:12px;font-weight:normal;color:var(--mut)">(Minor 4-day delay on P003)</small></p></div>
+        <div class="dash-stat">
+          <span class="dash-stat-label">Cost Performance Index (CPI)</span>
+          <div class="dash-stat-val" style="color:#16a34a">1.04</div>
+          <span class="dash-stat-meta">Earned Value (EV) exceeds Actual Cost (AC) by 4.0%</span>
+        </div>
+        <div class="dash-stat">
+          <span class="dash-stat-label">Schedule Performance Index (SPI)</span>
+          <div class="dash-stat-val" style="color:#d97706">0.96</div>
+          <span class="dash-stat-meta">Slight variance on concrete pouring due to monsoon rainfall</span>
+        </div>
       </div>
     </div>
-  `:''}
+  ` : ''}
 
-  ${tab==='alerts'?`
+  ${tab === 'alerts' ? `
     <div class="card">
-      <h3>Active System Alerts & Approval Matrix</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0;font-size:15px">Active System Alerts & Approval Matrix</h3>
+        <span class="mut">Real-time alerts across 12 modules</span>
+      </div>
       <table>
-        <thead><tr><th>Type</th><th>Module</th><th>Severity</th><th>Description</th><th>Action</th></tr></thead>
+        <thead><tr><th>Severity</th><th>Module</th><th>Alert Details</th><th>Triggered Date</th><th>Assigned Role</th><th>Action</th></tr></thead>
         <tbody>
-          <tr><td><span class="tag t-bad">Delayed</span></td><td>Project Management</td><td>High</td><td>P003 Slab Work delayed by rain & labour shortage</td><td><button class="btn sm sec" onclick="go('site')">Review DPR</button></td></tr>
-          <tr><td><span class="tag t-warn">Approval</span></td><td>Procurement</td><td>Medium</td><td>2 Purchase Requisitions awaiting management sign-off</td><td><button class="btn sm" onclick="go('proc')">Approve PRs</button></td></tr>
-          <tr><td><span class="tag t-warn">Overdue</span></td><td>Finance</td><td>Medium</td><td>INV-204 client billing pending for 14 days</td><td><button class="btn sm sec" onclick="go('fin')">View Invoices</button></td></tr>
-          <tr><td><span class="tag t-ok">Passed</span></td><td>Quality</td><td>Low</td><td>Cube test 28-day sample passed 28.5 N/mm²</td><td><button class="btn sm sec" onclick="go('qa')">View QA</button></td></tr>
+          <tr>
+            <td><span class="tag t-bad">High</span></td>
+            <td>Quality & Safety</td>
+            <td><b>NCR-01: Honeycombing in Column C3 starter</b><br><small class="mut">Requires certified structural grout inspection</small></td>
+            <td>${addDays(S.today, -3)}</td>
+            <td>Quality Engineer</td>
+            <td><button class="btn sm sec" onclick="go('qa')">Review NCR</button></td>
+          </tr>
+          <tr>
+            <td><span class="tag t-warn">Medium</span></td>
+            <td>Procurement</td>
+            <td><b>PR-102: TMT Steel 16mm Reorder Threshold</b><br><small class="mut">Stock fell below 5 MT buffer on site</small></td>
+            <td>${addDays(S.today, -1)}</td>
+            <td>Procurement Mgr</td>
+            <td><button class="btn sm" onclick="go('proc')">Issue PO</button></td>
+          </tr>
+          <tr>
+            <td><span class="tag t-warn">Medium</span></td>
+            <td>Finance</td>
+            <td><b>INV-204: Client Billing Clearance Pending</b><br><small class="mut">RA Bill #4 for ₹28.5L submitted 14 days ago</small></td>
+            <td>${addDays(S.today, -14)}</td>
+            <td>Accountant</td>
+            <td><button class="btn sm sec" onclick="go('fin')">View Invoices</button></td>
+          </tr>
+          <tr>
+            <td><span class="tag t-blue">Info</span></td>
+            <td>Site Operations</td>
+            <td><b>Tower Crane TC-401 Scheduled Maintenance</b><br><small class="mut">Periodic oil change due in 25 operational hours</small></td>
+            <td>${S.today}</td>
+            <td>Plant & Machinery</td>
+            <td><button class="btn sm sec" onclick="go('fleet')">Log Service</button></td>
+          </tr>
         </tbody>
       </table>
     </div>
-  `:''}
+  ` : ''}
 
-  ${tab==='quick'?`
+  ${tab === 'quick' ? `
     <div class="card">
       <h3>Quick Workflow Launcher</h3>
-      <p class="mut" style="margin-bottom:12px">Fast-track high-frequency daily operations across active projects:</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
-        <button class="btn" style="justify-content:center;padding:12px" onclick="newProj()">+ New Project</button>
-        <button class="btn ok" style="justify-content:center;padding:12px" onclick="go('site');setTab('site','dpr')">+ Submit DPR</button>
-        <button class="btn sec" style="justify-content:center;padding:12px" onclick="go('proc');setTab('proc','indent')">+ Raise Indent (PR)</button>
-        <button class="btn sec" style="justify-content:center;padding:12px" onclick="go('site');setTab('site','muster')">Daily Muster Roll</button>
-        <button class="btn sec" style="justify-content:center;padding:12px" onclick="go('qa');setTab('qa','ncr')">+ Raise NCR</button>
-        <button class="btn sec" style="justify-content:center;padding:12px" onclick="go('fleet');setTab('fleet','fuel')">+ Log Diesel Issue</button>
+      <p class="mut" style="margin-bottom:14px">One-click shortcuts to key operational functions across modules:</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
+        <div class="dash-stat" style="cursor:pointer" onclick="newProj()">
+          <span class="dash-stat-label">Project Management</span>
+          <div style="font-size:16px;font-weight:700;margin:6px 0;color:#2563eb">+ Create New Project</div>
+          <small class="mut">Initialize project, WBS & budget</small>
+        </div>
+        <div class="dash-stat" style="cursor:pointer" onclick="go('site');setTab('site','dpr')">
+          <span class="dash-stat-label">Site Operations</span>
+          <div style="font-size:16px;font-weight:700;margin:6px 0;color:#16a34a">+ Submit Daily DPR</div>
+          <small class="mut">Log daily progress, labor & site photos</small>
+        </div>
+        <div class="dash-stat" style="cursor:pointer" onclick="go('proc');setTab('proc','indent')">
+          <span class="dash-stat-label">Procurement</span>
+          <div style="font-size:16px;font-weight:700;margin:6px 0;color:#d97706">+ Raise Material PR</div>
+          <small class="mut">Request cement, steel, or aggregate</small>
+        </div>
+        <div class="dash-stat" style="cursor:pointer" onclick="go('crm');setTab('crm','tenders')">
+          <span class="dash-stat-label">CRM & Tenders</span>
+          <div style="font-size:16px;font-weight:700;margin:6px 0;color:#7c3aed">+ Register Tender Bid</div>
+          <small class="mut">Track bids, EMD & pre-qualifications</small>
+        </div>
+        <div class="dash-stat" style="cursor:pointer" onclick="go('qa');setTab('qa','insp')">
+          <span class="dash-stat-label">Quality Assurance</span>
+          <div style="font-size:16px;font-weight:700;margin:6px 0;color:#dc2626">+ QA Stage Inspection</div>
+          <small class="mut">Pass/Fail checklist before pouring</small>
+        </div>
+        <div class="dash-stat" style="cursor:pointer" onclick="go('fin');setTab('fin','ra')">
+          <span class="dash-stat-label">Finance & Accounts</span>
+          <div style="font-size:16px;font-weight:700;margin:6px 0;color:#2563eb">+ Client RA Bill</div>
+          <small class="mut">Generate monthly measurement bill</small>
+        </div>
       </div>
     </div>
-  `:''}
+  ` : ''}
 `;
 };
 
@@ -727,212 +961,238 @@ V.crm=()=>{
   const totalEMD = tenders.reduce((a, t) => a + (Number(t.emd) || 0), 0);
   const totalBidVal = bids.reduce((a, b) => a + (Number(b.bid_price) || 0), 0);
   const totalOppVal = opps.reduce((a, o) => a + (Number(o.est_val) || 0), 0);
-  const abcOpp = opps.find(o => o.client_name.includes('ABC') || o.title.includes('ABC')) || opps[0];
+  const abcOpp = opps.find(o => (o.client_name && o.client_name.includes('ABC')) || (o.title && o.title.includes('ABC'))) || opps[0];
 
   return `
   ${tabNav('crm', [
     ['overview', 'Dashboard & Overview'],
-    ['leads', '1. Lead Management (${leads.length})'],
-    ['clients', '2. Client Management (${clients.length})'],
-    ['tenders', '3. Tender Management (${tenders.length})'],
-    ['bids', '4. Bid & Quotation (${bids.length})'],
-    ['opps', '5. Opportunities & Follow-ups (${opps.length})']
+    ['leads', '1. Lead Management (' + leads.length + ')'],
+    ['clients', '2. Client Management (' + clients.length + ')'],
+    ['tenders', '3. Tender Management (' + tenders.length + ')'],
+    ['bids', '4. Bid & Quotation (' + bids.length + ')'],
+    ['opps', '5. Opportunities & Follow-ups (' + opps.length + ')']
   ])}
 
   ${tab === 'overview' ? `
-    <!-- KPI Summary Grid -->
-    <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:16px">
-      <div class="card" style="margin:0;border-left:4px solid #1c7ed6">
-        <small class="mut">Total Leads Captured</small>
-        <div style="font-size:22px;font-weight:700;margin:4px 0">${leads.length}</div>
-        <small style="color:#2f9e44"><b>${qualifiedLeads.length} Qualified</b> (${leads.length ? Math.round((qualifiedLeads.length/leads.length)*100) : 0}%)</small>
+    <!-- Top KPI Grid: Clean, Simple, Professional -->
+    <div class="grid kpis" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:16px">
+      <div class="dash-stat">
+        <div class="dash-stat-top">
+          <span class="dash-stat-label">Total Leads</span>
+          <div class="dash-stat-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          </div>
+        </div>
+        <div class="dash-stat-val">${leads.length}</div>
+        <div class="dash-stat-foot">
+          <span class="tag t-ok">${qualifiedLeads.length} Qualified</span>
+          <span>${leads.length ? Math.round((qualifiedLeads.length/leads.length)*100) : 0}% qualification rate</span>
+        </div>
       </div>
-      <div class="card" style="margin:0;border-left:4px solid #2f9e44">
-        <small class="mut">Corporate Clients</small>
-        <div style="font-size:22px;font-weight:700;margin:4px 0">${clients.length}</div>
-        <small class="mut">Enterprise & PSUs</small>
+
+      <div class="dash-stat">
+        <div class="dash-stat-top">
+          <span class="dash-stat-label">Corporate Clients</span>
+          <div class="dash-stat-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+        </div>
+        <div class="dash-stat-val">${clients.length}</div>
+        <div class="dash-stat-foot">
+          <span class="tag t-blue">${clients.filter(c => c.tier && c.tier.includes('Tier 1')).length} Tier 1</span>
+          <span>Enterprise & PSUs</span>
+        </div>
       </div>
-      <div class="card" style="margin:0;border-left:4px solid #f08c00">
-        <small class="mut">Tender Pipeline Value</small>
-        <div style="font-size:22px;font-weight:700;margin:4px 0">${mn(totalTenderVal)}</div>
-        <small class="mut">${tenders.length} Active Tenders (EMD: ${mn(totalEMD)})</small>
+
+      <div class="dash-stat">
+        <div class="dash-stat-top">
+          <span class="dash-stat-label">Tender Pipeline</span>
+          <div class="dash-stat-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+        </div>
+        <div class="dash-stat-val">${mn(totalTenderVal)}</div>
+        <div class="dash-stat-foot">
+          <span class="tag t-warn">${tenders.length} Active Tenders</span>
+          <span>EMD: ${mn(totalEMD)}</span>
+        </div>
       </div>
-      <div class="card" style="margin:0;border-left:4px solid #7950f2">
-        <small class="mut">Bids & Quotations</small>
-        <div style="font-size:22px;font-weight:700;margin:4px 0">${mn(totalBidVal)}</div>
-        <small style="color:#1c7ed6"><b>${bids.filter(b=>b.internal_approval==='Approved by MD').length} Approved</b> by MD</small>
+
+      <div class="dash-stat">
+        <div class="dash-stat-top">
+          <span class="dash-stat-label">Bids & Quotations</span>
+          <div class="dash-stat-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/></svg>
+          </div>
+        </div>
+        <div class="dash-stat-val">${mn(totalBidVal)}</div>
+        <div class="dash-stat-foot">
+          <span class="tag t-ok">${bids.filter(b=>b.internal_approval==='Approved by MD').length} Approved by MD</span>
+          <span>Avg margin 16.8%</span>
+        </div>
       </div>
-      <div class="card" style="margin:0;border-left:4px solid #e8590c">
-        <small class="mut">Opportunities Pipeline</small>
-        <div style="font-size:22px;font-weight:700;margin:4px 0">${mn(totalOppVal)}</div>
-        <small style="color:#2f9e44"><b>₹4.85 Cr Won & Awarded</b></small>
+
+      <div class="dash-stat">
+        <div class="dash-stat-top">
+          <span class="dash-stat-label">Opportunities Pipeline</span>
+          <div class="dash-stat-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m11 17 2 2a1 1 0 0 0 1.4 0l4.3-4.3a1 1 0 0 0 0-1.4l-2.6-2.6a1 1 0 0 0-1.4 0L13 12"/><path d="m3 14 3.7 3.7a1 1 0 0 0 1.4 0l3-3"/></svg>
+          </div>
+        </div>
+        <div class="dash-stat-val">${mn(totalOppVal)}</div>
+        <div class="dash-stat-foot">
+          <span class="tag t-ok">₹4.85 Cr Won</span>
+          <span>Ready for execution</span>
+        </div>
       </div>
     </div>
 
-    <!-- Featured Case Study Card: ABC Infrastructure Pvt. Ltd. -->
-    <div class="card" style="border:2px solid #e8590c;background:linear-gradient(180deg,#fffaf6 0%,#ffffff 100%);margin-bottom:16px;padding:20px;border-radius:12px">
+    <!-- Featured Case Study Card: ABC Infrastructure Pvt. Ltd. (Executive Dossier Style) -->
+    <div class="card" style="border:1px solid #e2e8f0;border-left:4px solid #16a34a;background:#ffffff;margin-bottom:18px;padding:20px;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,0.03)">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px">
         <div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-            <span class="tag" style="background:#e8590c;color:#fff;font-weight:700;font-size:11px">⭐ REAL-WORLD CASE STUDY</span>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span class="tag" style="background:#0f172a;color:#fff;font-weight:700;font-size:11px">CASE STUDY</span>
             <span class="tag t-ok" style="font-weight:700">TENDER AWARDED</span>
             <span class="tag t-blue">COMMERCIAL G+8</span>
           </div>
-          <h2 style="font-size:18px;font-weight:700;color:#1c2430;margin:4px 0">ABC Infrastructure Pvt. Ltd. – Visakhapatnam Commercial Hub (G+8)</h2>
+          <h2 style="font-size:18px;font-weight:700;color:#0f172a;margin:2px 0 4px">ABC Infrastructure Pvt. Ltd. – Visakhapatnam Commercial Hub (G+8)</h2>
           <p class="mut" style="font-size:13px">Turnkey Civil, Structural RCC, MEP & Architectural Finishes • Plot 42, Harbour Road, Visakhapatnam • Client: Mr. Vikram Adani</p>
         </div>
         <div style="text-align:right">
           <small class="mut">Client Budget vs Awarded Bid</small>
-          <div style="font-size:20px;font-weight:700;color:#2f9e44">₹4.85 Cr <small style="font-size:13px;color:#6b7686;font-weight:400">(Budget: ₹5.00 Cr)</small></div>
-          <small style="color:#2f9e44"><b>Gross Margin: 17.7%</b> (Est. Cost: ₹4.12 Cr)</small>
+          <div style="font-size:22px;font-weight:700;color:#16a34a">₹4.85 Cr <small style="font-size:13px;color:#64748b;font-weight:400">(Budget: ₹5.00 Cr)</small></div>
+          <small style="color:#16a34a"><b>Gross Margin: 17.7%</b> (Est. Cost: ₹4.12 Cr)</small>
         </div>
       </div>
 
-      <!-- Conversion Workflow Stepper -->
-      <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:16px">
-        <small class="mut" style="text-transform:uppercase;font-weight:700;letter-spacing:0.5px">Complete CRM to Project Execution Stepper</small>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;overflow-x:auto;padding-top:10px;font-size:12px">
-          <div style="display:flex;align-items:center;gap:6px;color:#2f9e44;font-weight:600">
-            <span style="background:#e6fcf5;border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #2f9e44">✓</span>
-            1. Lead (LD-101)
-          </div>
-          <span style="color:#adb5bd">➔</span>
-          <div style="display:flex;align-items:center;gap:6px;color:#2f9e44;font-weight:600">
-            <span style="background:#e6fcf5;border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #2f9e44">✓</span>
-            2. Qualified
-          </div>
-          <span style="color:#adb5bd">➔</span>
-          <div style="display:flex;align-items:center;gap:6px;color:#2f9e44;font-weight:600">
-            <span style="background:#e6fcf5;border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #2f9e44">✓</span>
-            3. Client (CL-101)
-          </div>
-          <span style="color:#adb5bd">➔</span>
-          <div style="display:flex;align-items:center;gap:6px;color:#2f9e44;font-weight:600">
-            <span style="background:#e6fcf5;border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #2f9e44">✓</span>
-            4. Tender (T-2026-04)
-          </div>
-          <span style="color:#adb5bd">➔</span>
-          <div style="display:flex;align-items:center;gap:6px;color:#2f9e44;font-weight:600">
-            <span style="background:#e6fcf5;border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #2f9e44">✓</span>
-            5. Bid (BID-101)
-          </div>
-          <span style="color:#adb5bd">➔</span>
-          <div style="display:flex;align-items:center;gap:6px;color:#2f9e44;font-weight:600">
-            <span style="background:#e6fcf5;border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #2f9e44">✓</span>
-            6. LoA Awarded
-          </div>
-          <span style="color:#adb5bd">➔</span>
-          <div style="display:flex;align-items:center;gap:6px;color:${abcOpp && abcOpp.converted_project_id ? '#2f9e44':'#e8590c'};font-weight:700">
-            <span style="background:${abcOpp && abcOpp.converted_project_id ? '#e6fcf5':'#fff3bf'};border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid ${abcOpp && abcOpp.converted_project_id ? '#2f9e44':'#f08c00'}">${abcOpp && abcOpp.converted_project_id ? '✓':'⚡'}</span>
-            7. ${abcOpp && abcOpp.converted_project_id ? 'Active Project ('+abcOpp.converted_project_id+')' : 'Convert to Project'}
+      <!-- Modern Visual Stepper -->
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:10px">End-to-End Business Acquisition & Execution Lifecycle</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;overflow-x:auto;padding-bottom:4px">
+          <div class="flow-pill done"><span>✓</span> 1. Lead (LD-101)</div>
+          <span style="color:#cbd5e1">➔</span>
+          <div class="flow-pill done"><span>✓</span> 2. Qualified</div>
+          <span style="color:#cbd5e1">➔</span>
+          <div class="flow-pill done"><span>✓</span> 3. Client (CL-101)</div>
+          <span style="color:#cbd5e1">➔</span>
+          <div class="flow-pill done"><span>✓</span> 4. Tender (T-2026-04)</div>
+          <span style="color:#cbd5e1">➔</span>
+          <div class="flow-pill done"><span>✓</span> 5. Bid (BID-101)</div>
+          <span style="color:#cbd5e1">➔</span>
+          <div class="flow-pill done"><span>✓</span> 6. LoA Awarded</div>
+          <span style="color:#cbd5e1">➔</span>
+          <div class="flow-pill ${abcOpp && abcOpp.converted_project_id ? 'done' : 'active'}">
+            <span>${abcOpp && abcOpp.converted_project_id ? '✓' : '⚡'}</span>
+            ${abcOpp && abcOpp.converted_project_id ? 'Active (' + abcOpp.converted_project_id + ')' : '7. Convert to Project'}
           </div>
         </div>
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-        <div style="font-size:13px;color:#495057">
-          <b>Status:</b> Letter of Award (LoA) signed. Mobilization advance BG accepted. Ready for site setup.
+        <div style="font-size:13px;color:#475569">
+          <b>Contract Status:</b> Letter of Award (LoA) signed. Mobilization advance BG accepted. Ready for site setup.
         </div>
-        <div>
+        <div style="display:flex;gap:8px;align-items:center">
           ${abcOpp && abcOpp.converted_project_id ? `
             <button class="btn ok" onclick="openProject('${abcOpp.converted_project_id}')" style="font-weight:700;padding:9px 18px">✓ Open Project ${abcOpp.converted_project_id} in Project Management →</button>
           ` : `
-            <button class="btn ok" onclick="convertProjectModal('${abcOpp ? abcOpp.id : 'OPP-101'}')" style="font-weight:700;padding:9px 20px;font-size:13.5px">⚡ 1-Click Convert to Active Project with 12-Stage WBS</button>
+            <button class="btn ok" onclick="convertProjectModal('${abcOpp ? abcOpp.id : 'OPP-101'}')" style="font-weight:700;padding:9px 20px;font-size:13px">⚡ 1-Click Convert to Active Project with 12-Stage WBS</button>
           `}
-          <button class="btn sec" onclick="viewBOQModal('BID-101')" style="margin-left:6px">View BOQ Breakdown</button>
+          <button class="btn sec" onclick="viewBOQModal('BID-101')">View BOQ Breakdown</button>
         </div>
       </div>
     </div>
 
     <!-- 5 Submodules Container (Matching User Provided UI Reference) -->
-    <div class="card" style="margin-bottom:16px;border-radius:12px;padding:20px">
+    <div class="card" style="margin-bottom:18px;border-radius:12px;padding:20px">
       <div style="margin-bottom:14px">
-        <h3 style="font-size:16px;font-weight:700;color:#1c2430;margin-bottom:4px">1. Module structure</h3>
-        <p class="mut" style="font-size:13px">I recommend keeping just <b>5 submodules</b> inside CRM & Tenders.</p>
+        <h3 style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:3px">Commercial & Acquisition Submodules</h3>
+        <p class="mut" style="font-size:13px">Core operational workflows to manage leads, tender submissions, client accounts, and commercial bids.</p>
       </div>
 
       <!-- Submodule 1 -->
-      <div class="submod-card" onclick="setTab('crm','leads')" style="border:1px solid var(--line);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;background:#fff;cursor:pointer;transition:all 0.2s">
+      <div class="submod-card" onclick="setTab('crm','leads')">
         <div style="display:flex;align-items:center;gap:16px">
           <div style="width:44px;height:44px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
           </div>
           <div>
-            <div style="font-size:15px;font-weight:700;color:#1c2430">1. Lead Management</div>
-            <div style="font-size:13px;color:#6b7686;margin-top:2px">Capture and manage potential business opportunities.</div>
+            <div style="font-size:15px;font-weight:700;color:#0f172a">1. Lead Management</div>
+            <div style="font-size:13px;color:#64748b;margin-top:2px">Capture and manage potential business opportunities.</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:12px">
           <span class="tag t-blue" style="font-weight:600">${leads.length} Leads</span>
-          <button class="btn sm sec">Open →</button>
+          <button class="btn sm sec">Open Submodule →</button>
         </div>
       </div>
 
       <!-- Submodule 2 -->
-      <div class="submod-card" onclick="setTab('crm','clients')" style="border:1px solid var(--line);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;background:#fff;cursor:pointer;transition:all 0.2s">
+      <div class="submod-card" onclick="setTab('crm','clients')">
         <div style="display:flex;align-items:center;gap:16px">
           <div style="width:44px;height:44px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
           <div>
-            <div style="font-size:15px;font-weight:700;color:#1c2430">2. Client Management</div>
-            <div style="font-size:13px;color:#6b7686;margin-top:2px">Manage client companies, contacts and relationships.</div>
+            <div style="font-size:15px;font-weight:700;color:#0f172a">2. Client Management</div>
+            <div style="font-size:13px;color:#64748b;margin-top:2px">Manage client companies, contacts and relationships.</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:12px">
           <span class="tag t-ok" style="font-weight:600">${clients.length} Clients</span>
-          <button class="btn sm sec">Open →</button>
+          <button class="btn sm sec">Open Submodule →</button>
         </div>
       </div>
 
       <!-- Submodule 3 -->
-      <div class="submod-card" onclick="setTab('crm','tenders')" style="border:1px solid var(--line);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;background:#fff;cursor:pointer;transition:all 0.2s">
+      <div class="submod-card" onclick="setTab('crm','tenders')">
         <div style="display:flex;align-items:center;gap:16px">
           <div style="width:44px;height:44px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           </div>
           <div>
-            <div style="font-size:15px;font-weight:700;color:#1c2430">3. Tender Management</div>
-            <div style="font-size:13px;color:#6b7686;margin-top:2px">Track tender notices, eligibility, deadlines and documents.</div>
+            <div style="font-size:15px;font-weight:700;color:#0f172a">3. Tender Management</div>
+            <div style="font-size:13px;color:#64748b;margin-top:2px">Track tender notices, eligibility, deadlines and documents.</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:12px">
-          <span class="tag t-amber" style="font-weight:600">${tenders.length} Tenders</span>
-          <button class="btn sm sec">Open →</button>
+          <span class="tag t-warn" style="font-weight:600">${tenders.length} Tenders</span>
+          <button class="btn sm sec">Open Submodule →</button>
         </div>
       </div>
 
       <!-- Submodule 4 -->
-      <div class="submod-card" onclick="setTab('crm','bids')" style="border:1px solid var(--line);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;background:#fff;cursor:pointer;transition:all 0.2s">
+      <div class="submod-card" onclick="setTab('crm','bids')">
         <div style="display:flex;align-items:center;gap:16px">
           <div style="width:44px;height:44px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg>
           </div>
           <div>
-            <div style="font-size:15px;font-weight:700;color:#1c2430">4. Bid & Quotation Management</div>
-            <div style="font-size:13px;color:#6b7686;margin-top:2px">Prepare estimates, pricing, technical and financial bids.</div>
+            <div style="font-size:15px;font-weight:700;color:#0f172a">4. Bid & Quotation Management</div>
+            <div style="font-size:13px;color:#64748b;margin-top:2px">Prepare estimates, pricing, technical and financial bids.</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:12px">
-          <span class="tag t-purple" style="font-weight:600">${bids.length} Bids</span>
-          <button class="btn sm sec">Open →</button>
+          <span class="tag t-blue" style="font-weight:600">${bids.length} Bids</span>
+          <button class="btn sm sec">Open Submodule →</button>
         </div>
       </div>
 
       <!-- Submodule 5 -->
-      <div class="submod-card" onclick="setTab('crm','opps')" style="border:1px solid var(--line);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;background:#fff;cursor:pointer;transition:all 0.2s">
+      <div class="submod-card" onclick="setTab('crm','opps')">
         <div style="display:flex;align-items:center;gap:16px">
           <div style="width:44px;height:44px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17 2 2a1 1 0 0 0 1.4 0l4.3-4.3a1 1 0 0 0 0-1.4l-2.6-2.6a1 1 0 0 0-1.4 0L13 12"/><path d="m3 14 3.7 3.7a1 1 0 0 0 1.4 0l3-3"/><path d="m14 7 3-3a1 1 0 0 1 1.4 0l2.6 2.6a1 1 0 0 1 0 1.4l-3 3"/><path d="m7 14 2-2"/></svg>
           </div>
           <div>
-            <div style="font-size:15px;font-weight:700;color:#1c2430">5. Opportunity & Follow-up Management</div>
-            <div style="font-size:13px;color:#6b7686;margin-top:2px">Track meetings, calls, negotiations and winning probability.</div>
+            <div style="font-size:15px;font-weight:700;color:#0f172a">5. Opportunity & Follow-up Management</div>
+            <div style="font-size:13px;color:#64748b;margin-top:2px">Track meetings, calls, negotiations and winning probability.</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:12px">
-          <span class="tag t-gray" style="font-weight:600">${opps.length} Opportunities</span>
-          <button class="btn sm sec">Open →</button>
+          <span class="tag t-ok" style="font-weight:600">${opps.length} Opportunities</span>
+          <button class="btn sm sec">Open Submodule →</button>
         </div>
       </div>
     </div>
@@ -940,7 +1200,10 @@ V.crm=()=>{
     <!-- Recent CRM Activities & Follow-ups -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3 style="font-size:15px;margin:0">Recent Meetings, Negotiations & Scheduled Follow-ups</h3>
+        <div>
+          <h3 style="font-size:15px;margin:0">Recent Meetings, Negotiations & Scheduled Follow-ups</h3>
+          <small class="mut">Direct touchpoints with clients and contracting authorities</small>
+        </div>
         <button class="btn sm sec" onclick="logCRMActivityModal('', 'opportunity')">+ Log Activity / Meeting</button>
       </div>
       <table>
@@ -949,7 +1212,7 @@ V.crm=()=>{
           ${acts.map(a => `
             <tr>
               <td><b>${a.activity_date}</b></td>
-              <td><span class="tag ${a.type==='Negotiation'?'t-ok':a.type==='Meeting'?'t-blue':a.type==='Site Visit'?'t-amber':'t-gray'}">${a.type}</span></td>
+              <td><span class="tag ${a.type==='Negotiation'?'t-ok':a.type==='Meeting'?'t-blue':a.type==='Site Visit'?'t-warn':'t-gray'}">${a.type}</span></td>
               <td><b>${a.ref_id}</b><br><small class="mut">${a.client_attendees||'—'}</small></td>
               <td><b>${a.title}</b><br><small class="mut">${a.summary}</small></td>
               <td>${a.conducted_by}</td>
@@ -1105,8 +1368,8 @@ V.crm=()=>{
               <td><b>${b.title}</b><br><small class="mut">${b.notes||'—'}</small></td>
               <td>${b.client}</td>
               <td class="num">${mn(b.est_cost)}</td>
-              <td class="num" style="color:#2f9e44"><b>${b.margin_pct}%</b></td>
-              <td class="num"><b style="font-size:14px;color:#1c7ed6">${mn(b.bid_price)}</b></td>
+              <td class="num" style="color:#16a34a"><b>${b.margin_pct}%</b></td>
+              <td class="num"><b style="font-size:14px;color:#2563eb">${mn(b.bid_price)}</b></td>
               <td><small><b>Tech:</b> ${b.tech_proposal ? b.tech_proposal.slice(0, 40) + '...' : 'WBS submitted'}</small><br><small class="mut"><b>Fin:</b> ${b.fin_proposal ? b.fin_proposal.slice(0, 40) + '...' : 'Itemized BOQ'}</small></td>
               <td>${tag(b.internal_approval)}</td>
               <td>${tag(b.status)}</td>
@@ -1144,9 +1407,9 @@ V.crm=()=>{
         <span class="tag t-gray">Identification (20%)</span> ➔
         <span class="tag t-blue">Qualification (40%)</span> ➔
         <span class="tag t-purple">Proposal / Bid (70%)</span> ➔
-        <span class="tag t-amber">Negotiation (90%)</span> ➔
+        <span class="tag t-warn">Negotiation (90%)</span> ➔
         <span class="tag t-ok">Won / Awarded (100%)</span> ➔
-        <span class="tag" style="background:#2f9e44;color:#fff;font-weight:700">🚀 Convert to Project</span>
+        <span class="tag" style="background:#16a34a;color:#fff;font-weight:700">🚀 Convert to Project</span>
       </div>
     </div>
 
@@ -1164,11 +1427,11 @@ V.crm=()=>{
               <td><b>${o.title}</b><br><small class="mut">${o.scope||'—'}</small></td>
               <td><b>${o.client_name}</b></td>
               <td class="num"><b>${mn(o.est_val)}</b></td>
-              <td><span class="tag ${o.stage==='Won'?'t-ok':o.stage==='Negotiation'?'t-amber':o.stage==='Proposal/Bid'?'t-purple':'t-blue'}">${o.stage}</span></td>
+              <td><span class="tag ${o.stage==='Won'?'t-ok':o.stage==='Negotiation'?'t-warn':o.stage==='Proposal/Bid'?'t-purple':'t-blue'}">${o.stage}</span></td>
               <td>
                 <div style="display:flex;align-items:center;gap:6px">
                   <div style="background:#e9ecef;border-radius:4px;height:8px;width:55px;overflow:hidden">
-                    <div style="background:${o.win_prob>=80?'#2f9e44':o.win_prob>=50?'#1c7ed6':'#f08c00'};width:${o.win_prob}%;height:100%"></div>
+                    <div style="background:${o.win_prob>=80?'#16a34a':o.win_prob>=50?'#2563eb':'#d97706'};width:${o.win_prob}%;height:100%"></div>
                   </div>
                   <b>${o.win_prob}%</b>
                 </div>
@@ -1196,637 +1459,6 @@ V.crm=()=>{
   ` : ''}
 `;
 };
-
-/* ==============================================================
-   CRM & TENDER MODALS & WORKFLOW LOGIC
-   ============================================================== */
-
-function openProject(pid){
-  S.ap = pid;
-  S.v = 'proj';
-  setTab('proj', 'list');
-  render();
-  toast('Switched to active enterprise project ' + pid);
-}
-
-function newLeadModal(){
-  modal(`
-    <h2>1. Capture New Lead / Project Opportunity</h2>
-    <div class="f">
-      <label>Project Title / Inquiry<input id="ld1" value="Commercial Hub Complex G+8"></label>
-      <div class="f2">
-        <label>Client Organization Name<input id="ld2" value="ABC Infrastructure Pvt. Ltd."></label>
-        <label>Contact Person<input id="ld3" value="Mr. Vikram Adani"></label>
-      </div>
-      <div class="f2">
-        <label>Phone Number<input id="ld4" value="+91 98490 12345"></label>
-        <label>Email Address<input id="ld5" value="vadani@abcinfra.com"></label>
-      </div>
-      <div class="f2">
-        <label>Lead Source<select id="ld6">
-          <option>Direct Enquiry</option>
-          <option>Referral</option>
-          <option>Industrial Trade Expo</option>
-          <option>Website Enquiry</option>
-          <option>Government Notice</option>
-        </select></label>
-        <label>Estimated Value (₹)<input id="ld7" type="number" value="50000000"></label>
-      </div>
-      <div class="f2">
-        <label>Project Location / City<input id="ld8" value="Harbour Road, Visakhapatnam"></label>
-        <label>Assigned BDM / Manager<input id="ld9" value="Rajesh Sharma (BDM)"></label>
-      </div>
-      <label>Client Requirements & Notes<textarea id="ld10" rows="2" placeholder="Civil, Structural RCC, MEP & Finishes requirements...">Turnkey Civil + Structural + MEP package. Client budget ₹5.00 Cr approved.</textarea></label>
-    </div>
-    <div style="text-align:right">
-      <button class="btn sec" onclick="closeM()">Cancel</button>
-      <button class="btn" onclick="saveLead()">Capture Lead</button>
-    </div>
-  `);
-}
-
-async function saveLead(){
-  const title = $('#ld1').value.trim();
-  const client_name = $('#ld2').value.trim();
-  if(!title || !client_name) return toast('Please enter project title and client name');
-  const body = {
-    title,
-    client_name,
-    contact_person: $('#ld3').value,
-    phone: $('#ld4').value,
-    email: $('#ld5').value,
-    source: $('#ld6').value,
-    est_value: +$('#ld7').value || 0,
-    location: $('#ld8').value,
-    assigned_to: $('#ld9').value,
-    notes: $('#ld10').value,
-    status: 'New'
-  };
-  closeM();
-  const res = await api('/api/crm/leads', body);
-  if(res && res.ok){
-    toast('Lead captured successfully: ' + res.id);
-  }
-}
-
-function qualifyLeadModal(leadId){
-  const l = (S.leads||[]).find(x => x.id === leadId);
-  if(!l) return toast('Lead not found');
-  modal(`
-    <h2>2. Qualify Lead & Convert to Client + Opportunity</h2>
-    <p class="mut" style="margin-bottom:12px">Validating lead <b>${l.id}</b> – ${l.title}</p>
-    <div class="f">
-      <div style="background:#f8f9fa;padding:10px 14px;border-radius:8px;border:1px solid var(--line);margin-bottom:10px">
-        <div><b>Client:</b> ${l.client_name} • <b>Budget:</b> ${mn(l.est_value)}</div>
-        <div class="mut" style="font-size:12.5px;margin-top:2px">Location: ${l.location||'Visakhapatnam'} • Source: ${l.source}</div>
-      </div>
-      <div class="f2">
-        <label>Technical Feasibility Verified?
-          <select id="ql1"><option>Yes - Scope matches our civil/MEP capability</option><option>Requires JV partner</option></select>
-        </label>
-        <label>Client Budget Status
-          <select id="ql2"><option>Confirmed & Board Approved</option><option>Tentative Budget</option></select>
-        </label>
-      </div>
-      <div class="f2">
-        <label>Client Designation<input id="ql3" value="Director (Projects)"></label>
-        <label>Client Tier Rating<select id="ql4"><option>Tier 1 Enterprise</option><option>Tier 2 Commercial</option><option>Government PSU</option></select></label>
-      </div>
-      <div class="f2">
-        <label>Initial Win Probability (%)<input id="ql5" type="number" value="40"></label>
-        <label>Opportunity Pipeline Stage<select id="ql6"><option>Qualification</option><option>Proposal/Bid</option></select></label>
-      </div>
-    </div>
-    <div style="text-align:right">
-      <button class="btn sec" onclick="closeM()">Cancel</button>
-      <button class="btn ok" onclick="submitQualifyLead('${leadId}')">✓ Qualify & Create Client Record</button>
-    </div>
-  `);
-}
-
-async function submitQualifyLead(leadId){
-  const l = (S.leads||[]).find(x => x.id === leadId);
-  const body = {
-    leadId,
-    clientData: {
-      name: l ? l.client_name : '',
-      contact_person: l ? l.contact_person : '',
-      designation: $('#ql3').value,
-      phone: l ? l.phone : '',
-      email: l ? l.email : '',
-      address: l ? l.location : '',
-      tier: $('#ql4').value
-    },
-    oppData: {
-      title: l ? l.title : 'Commercial Hub Construction',
-      scope: l ? l.notes : 'Turnkey Civil & Structural',
-      est_val: l ? l.est_value : 50000000,
-      stage: $('#ql6').value,
-      win_prob: +$('#ql5').value || 40,
-      responsible_mgr: l ? l.assigned_to : 'Rajesh Sharma (BDM)'
-    }
-  };
-  closeM();
-  const res = await api('/api/crm/leads/qualify', body);
-  if(res && res.ok){
-    toast('Lead qualified! Client ' + res.result.clientId + ' & Opportunity ' + res.result.oppId + ' created.');
-  }
-}
-
-function newClientModal(){
-  modal(`
-    <h2>2. Register Client Organization</h2>
-    <div class="f">
-      <label>Company / Organization Name<input id="cl1" value="ABC Infrastructure Pvt. Ltd."></label>
-      <div class="f2">
-        <label>Primary Contact Person<input id="cl2" value="Mr. Vikram Adani"></label>
-        <label>Designation<input id="cl3" value="Director (Projects & Infrastructure)"></label>
-      </div>
-      <div class="f2">
-        <label>Contact Phone<input id="cl4" value="+91 98490 12345"></label>
-        <label>Contact Email<input id="cl5" value="vadani@abcinfra.com"></label>
-      </div>
-      <div class="f2">
-        <label>GSTIN Number<input id="cl6" value="37AABCA1234F1Z8"></label>
-        <label>PAN Number<input id="cl7" value="AABCA1234F"></label>
-      </div>
-      <div class="f2">
-        <label>City<input id="cl8" value="Visakhapatnam"></label>
-        <label>Client Tier<select id="cl9"><option>Tier 1 Enterprise</option><option>Tier 2 Commercial</option><option>Government PSU</option></select></label>
-      </div>
-      <label>Registered Office Address<input id="cl10" value="Plot 42, Port Access Corridor, Harbour Road"></label>
-    </div>
-    <div style="text-align:right">
-      <button class="btn sec" onclick="closeM()">Cancel</button>
-      <button class="btn" onclick="saveClient()">Save Client</button>
-    </div>
-  `);
-}
-
-async function saveClient(){
-  const name = $('#cl1').value.trim();
-  if(!name) return toast('Please enter company name');
-  const body = {
-    name,
-    contact_person: $('#cl2').value,
-    designation: $('#cl3').value,
-    phone: $('#cl4').value,
-    email: $('#cl5').value,
-    gstin: $('#cl6').value,
-    pan: $('#cl7').value,
-    city: $('#cl8').value,
-    tier: $('#cl9').value,
-    address: $('#cl10').value,
-    status: 'Active'
-  };
-  closeM();
-  const res = await api('/api/crm/clients', body);
-  if(res && res.ok){
-    toast('Client created: ' + res.id);
-  }
-}
-
-function viewClientModal(cid){
-  const c = (S.clients||[]).find(x => x.id === cid);
-  if(!c) return;
-  modal(`
-    <h2>Client Company Profile – ${c.name}</h2>
-    <div style="margin:12px 0;line-height:1.7">
-      <div><b>Client ID:</b> ${c.id}</div>
-      <div><b>Primary Contact:</b> ${c.contact_person} (${c.designation})</div>
-      <div><b>Phone / Email:</b> ${c.phone} • ${c.email}</div>
-      <div><b>GSTIN / PAN:</b> <code>${c.gstin}</code> / <code>${c.pan}</code></div>
-      <div><b>Address:</b> ${c.address}, ${c.city}</div>
-      <div><b>Classification:</b> <span class="tag t-blue">${c.tier}</span> • ${tag(c.status)}</div>
-    </div>
-    <div style="text-align:right">
-      <button class="btn" onclick="closeM()">Close</button>
-    </div>
-  `);
-}
-
-function newTenderModal(){
-  modal(`
-    <h2>3. Register Tender Notice</h2>
-    <div class="f">
-      <label>Tender Title / Notice<input id="t1" value="Visakhapatnam Port Commercial Complex G+8"></label>
-      <div class="f2">
-        <label>Client Authority<input id="t2" value="ABC Infrastructure Pvt. Ltd."></label>
-        <label>Category<select id="t3"><option>Commercial EPC</option><option>Infrastructure</option><option>Industrial</option><option>Residential</option></select></label>
-      </div>
-      <div class="f2">
-        <label>Tender Value (₹)<input id="t4" type="number" value="50000000"></label>
-        <label>EMD Amount (₹)<input id="t5" type="number" value="1000000"></label>
-      </div>
-      <div class="f2">
-        <label>Tender Document Fee (₹)<input id="t6" type="number" value="25000"></label>
-        <label>Submission Deadline<input id="t7" type="date" value="${addDays(S.today,14)}"></label>
-      </div>
-      <label>Eligibility Criteria<input id="t8" value="Eligible - Meets turnover & tech criteria for G+8 commercial"></label>
-      <label>Document Checklist<input id="t9" value="Audited Balance Sheets (3 yrs), EMD Bank Guarantee, Solvency Cert (₹10 Cr), Tech Credentials"></label>
-      <label>Notes / Remarks<textarea id="t10" rows="2" placeholder="Pre-qualification details...">Turnkey Civil + Structural + MEP package.</textarea></label>
-    </div>
-    <div style="text-align:right">
-      <button class="btn sec" onclick="closeM()">Cancel</button>
-      <button class="btn" onclick="saveTender()">Register Tender</button>
-    </div>
-  `);
-}
-
-async function saveTender(){
-  const title = $('#t1').value.trim();
-  if(!title) return toast('Please enter tender title');
-  const body = {
-    title,
-    client: $('#t2').value,
-    type: $('#t3').value,
-    val: +$('#t4').value || 0,
-    emd: +$('#t5').value || 0,
-    tender_fee: +$('#t6').value || 0,
-    sub_date: $('#t7').value,
-    eligibility: $('#t8').value,
-    docs_checklist: $('#t9').value,
-    notes: $('#t10').value,
-    status: 'Bidding'
-  };
-  closeM();
-  const res = await api('/api/tenders', body);
-  if(res && res.ok){
-    toast('Tender registered in SQLite database: ' + res.id);
-  }
-}
-
-function updateTenderStatusModal(tenderId){
-  const t = (S.tenders||[]).find(x => x.id === tenderId);
-  if(!t) return;
-  modal(`
-    <h2>Update Tender Status – ${t.id}</h2>
-    <div class="f">
-      <label>Current Status: <b>${t.status}</b></label>
-      <label>New Status
-        <select id="ts1">
-          <option ${t.status==='Draft'?'selected':''}>Draft</option>
-          <option ${t.status==='Under Evaluation'?'selected':''}>Under Evaluation</option>
-          <option ${t.status==='Eligible'?'selected':''}>Eligible</option>
-          <option ${t.status==='Bidding'?'selected':''}>Bidding</option>
-          <option ${t.status==='Submitted'?'selected':''}>Submitted</option>
-          <option ${t.status==='Shortlisted'?'selected':''}>Shortlisted</option>
-          <option ${t.status==='Awarded'?'selected':''}>Awarded</option>
-          <option ${t.status==='Lost'?'selected':''}>Lost</option>
-        </select>
-      </label>
-      <label>Loss Reason (if Lost)<input id="ts2" placeholder="e.g. Price L1 was 5% lower..." value="${t.loss_reason||''}"></label>
-    </div>
-    <div style="text-align:right">
-      <button class="btn sec" onclick="closeM()">Cancel</button>
-      <button class="btn ok" onclick="saveTenderStatus('${tenderId}')">Save Status</button>
-    </div>
-  `);
-}
-
-async function saveTenderStatus(tenderId){
-  const body = {
-    id: tenderId,
-    status: $('#ts1').value,
-    loss_reason: $('#ts2').value
-  };
-  closeM();
-  const res = await api('/api/tenders/status', body);
-  if(res && res.ok){
-    toast('Tender status updated to ' + body.status);
-  }
-}
-
-function newBidModal(tenderId, oppId){
-  const t = (S.tenders||[]).find(x => x.id === tenderId);
-  const o = (S.opportunities||[]).find(x => x.id === oppId);
-  const defaultClient = t ? t.client : o ? o.client_name : 'ABC Infrastructure Pvt. Ltd.';
-  const defaultTitle = t ? t.title : o ? o.title : 'Commercial Building G+8 Turnkey Civil & MEP';
-  const defaultCost = 41200000;
-  const defaultMargin = 17.7;
-  const defaultPrice = Math.round(defaultCost * (1 + defaultMargin / 100));
-
-  modal(`
-    <h2>4. Prepare Cost Estimation & Commercial Bid</h2>
-    <div class="f">
-      <label>Project Bid Title<input id="b1" value="${defaultTitle}"></label>
-      <div class="f2">
-        <label>Client Organization<input id="b2" value="${defaultClient}"></label>
-        <label>Linked Tender Ref<input id="b3" value="${tenderId||(t?t.id:'')}"></label>
-      </div>
-      <div class="f3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-        <label>Direct & Indirect Cost (₹)<input id="b4" type="number" value="${defaultCost}" oninput="calcBid()"></label>
-        <label>Target Margin (%)<input id="b5" type="number" step="0.1" value="${defaultMargin}" oninput="calcBid()"></label>
-        <label>Calculated Quoted Price (₹)<input id="b6" type="number" value="${defaultPrice}"></label>
-      </div>
-      <label>Technical Proposal Highlights<textarea id="b7" rows="2">12-Stage WBS, Bar Bending Schedule, C35/40 High-grade mix design, 3D BIM coordination, HSE & Quality protocols</textarea></label>
-      <label>Commercial & BOQ Terms<textarea id="b8" rows="2">Itemized BOQ with firm price clause for 12 months, 10% mobilization advance against BG, 5% retention.</textarea></label>
-    </div>
-    <div style="text-align:right">
-      <button class="btn sec" onclick="closeM()">Cancel</button>
-      <button class="btn" onclick="saveBid('${oppId}')">Create Bid Record</button>
-    </div>
-  `);
-}
-
-function calcBid(){
-  const cost = +$('#b4').value || 0;
-  const margin = +$('#b5').value || 0;
-  $('#b6').value = Math.round(cost * (1 + margin / 100));
-}
-
-async function saveBid(oppId){
-  const title = $('#b1').value.trim();
-  if(!title) return toast('Please enter bid title');
-  const body = {
-    opp_id: oppId || '',
-    tender_id: $('#b3').value || '',
-    client: $('#b2').value,
-    title,
-    est_cost: +$('#b4').value || 0,
-    margin_pct: +$('#b5').value || 15,
-    bid_price: +$('#b6').value || 0,
-    tech_proposal: $('#b7').value,
-    fin_proposal: $('#b8').value,
-    internal_approval: 'In Review',
-    status: 'Draft'
-  };
-  closeM();
-  const res = await api('/api/crm/bids', body);
-  if(res && res.ok){
-    toast('Bid proposal created: ' + res.id);
-  }
-}
-
-async function approveBidAction(bidId){
-  const res = await api('/api/crm/bids/approve', { id: bidId, approvedBy: 'Director / CEO' });
-  if(res && res.ok){
-    toast('Bid ' + bidId + ' approved by MD / CEO!');
-  }
-}
-
-async function submitBidAction(bidId){
-  const res = await api('/api/crm/bids/submit', { id: bidId });
-  if(res && res.ok){
-    toast('Bid ' + bidId + ' marked as Submitted to client.');
-  }
-}
-
-function recordBidResultModal(bidId){
-  modal(`
-    <h2>Record Bid Decision Result – ${bidId}</h2>
-    <div class="f">
-      <label>Result Outcome
-        <select id="br1">
-          <option value="Awarded">Awarded (Won) 🏆</option>
-          <option value="Lost">Lost</option>
-        </select>
-      </label>
-      <label>Loss Reason / Debrief Notes (if lost)
-        <input id="br2" placeholder="e.g. Price difference, L1 bidder...">
-      </label>
-    </div>
-    <div style="text-align:right">
-      <button class="btn sec" onclick="closeM()">Cancel</button>
-      <button class="btn ok" onclick="saveBidResult('${bidId}')">Confirm Result</button>
-    </div>
-  `);
-}
-
-async function saveBidResult(bidId){
-  const status = $('#br1').value;
-  const lossReason = $('#br2').value;
-  closeM();
-  const res = await api('/api/crm/bids/result', { id: bidId, status, lossReason });
-  if(res && res.ok){
-    toast('Bid result recorded: ' + status);
-  }
-}
-
-function viewBOQModal(bidId){
-  const b = (S.bids||[]).find(x => x.id === bidId) || {
-    id: 'BID-101', client: 'ABC Infrastructure Pvt. Ltd.', title: 'Commercial Building G+8 Turnkey Civil & MEP',
-    est_cost: 41200000, margin_pct: 17.7, bid_price: 48500000
-  };
-  modal(`
-    <h2>BOQ Rate Analysis & Cost Sheet – ${b.id}</h2>
-    <div class="card" style="margin:10px 0;padding:12px;background:#f8f9fa">
-      <div style="display:flex;justify-content:space-between">
-        <div><b>Client:</b> ${b.client}</div>
-        <div><b>Estimated Cost:</b> ${mn(b.est_cost)}</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:4px">
-        <div><b>Margin:</b> ${b.margin_pct}%</div>
-        <div style="color:#2f9e44;font-size:15px"><b>Quoted Bid: ${mn(b.bid_price)}</b></div>
-      </div>
-    </div>
-    <table>
-      <thead><tr><th>Item Code</th><th>Description</th><th class="num">Qty</th><th>Unit</th><th class="num">Estimated Rate</th><th class="num">Quoted Rate</th><th class="num">Total (₹)</th></tr></thead>
-      <tbody>
-        <tr><td>1.01</td><td>Earthwork Excavation in all types of soil</td><td class="num">4,200</td><td>cum</td><td class="num">₹280</td><td class="num">₹340</td><td class="num">₹14,28,000</td></tr>
-        <tr><td>1.02</td><td>PCC 1:4:8 Substructure Levelling Course</td><td class="num">380</td><td>cum</td><td class="num">₹4,800</td><td class="num">₹5,600</td><td class="num">₹21,28,000</td></tr>
-        <tr><td>1.03</td><td>RCC M35 Foundation Raft & Shear Walls</td><td class="num">1,450</td><td>cum</td><td class="num">₹7,200</td><td class="num">₹8,450</td><td class="num">₹1,22,52,500</td></tr>
-        <tr><td>1.04</td><td>TMT Steel Rebar Fe 550D Fabrication</td><td class="num">185</td><td>MT</td><td class="num">₹68,000</td><td class="num">₹79,500</td><td class="num">₹1,47,07,500</td></tr>
-        <tr><td>1.05</td><td>RCC Superstructure Framing G+1 to G+8</td><td class="num">1,820</td><td>cum</td><td class="num">₹7,600</td><td class="num">₹8,900</td><td class="num">₹1,61,98,000</td></tr>
-        <tr><td>1.06</td><td>External Glazing & ACP Elevation Cladding</td><td class="num">1,100</td><td>sqm</td><td class="num">₹1,450</td><td class="num">₹1,720</td><td class="num">₹18,92,000</td></tr>
-      </tbody>
-    </table>
-    <div style="text-align:right;margin-top:14px">
-      <button class="btn" onclick="closeM()">Close BOQ</button>
-    </div>
-  `);
-}
-
-function newOpportunityModal(clientId){
-  const c = (S.clients||[]).find(x => x.id === clientId);
-  modal(`
-    <h2>5. New Construction Opportunity</h2>
-    <div class="f">
-      <label>Opportunity Title<input id="op1" value="ABC Commercial Hub Construction (G+8)"></label>
-      <div class="f2">
-        <label>Client Organization<input id="op2" value="${c ? c.name : 'ABC Infrastructure Pvt. Ltd.'}"></label>
-        <label>Estimated Value (₹)<input id="op3" type="number" value="50000000"></label>
-      </div>
-      <label>Scope of Work<textarea id="op4" rows="2">Turnkey Civil, Structural RCC, MEP & Architectural Finishes for 4,500 sq.m G+8 office tower</textarea></label>
-      <div class="f3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-        <label>Pipeline Stage<select id="op5">
-          <option>Identification</option>
-          <option>Qualification</option>
-          <option>Proposal/Bid</option>
-          <option>Negotiation</option>
-          <option selected>Won</option>
-        </select></label>
-        <label>Win Probability (%)<input id="op6" type="number" value="100"></label>
-        <label>Expected Closing Date<input id="op7" type="date" value="${S.today}"></label>
-      </div>
-      <label>Responsible Manager<input id="op8" value="Rajesh Sharma (BDM)"></label>
-    </div>
-    <div style="text-align:right">
-      <button class="btn sec" onclick="closeM()">Cancel</button>
-      <button class="btn" onclick="saveOpportunity('${clientId||''}')">Save Opportunity</button>
-    </div>
-  `);
-}
-
-async function saveOpportunity(clientId){
-  const title = $('#op1').value.trim();
-  if(!title) return toast('Please enter opportunity title');
-  const body = {
-    client_id: clientId || '',
-    client_name: $('#op2').value,
-    title,
-    scope: $('#op4').value,
-    est_val: +$('#op3').value || 0,
-    stage: $('#op5').value,
-    win_prob: +$('#op6').value || 50,
-    expected_close: $('#op7').value,
-    responsible_mgr: $('#op8').value,
-    status: $('#op5').value === 'Won' ? 'Won' : 'Active'
-  };
-  closeM();
-  const res = await api('/api/crm/opportunities', body);
-  if(res && res.ok){
-    toast('Opportunity registered: ' + res.id);
-  }
-}
-
-function logCRMActivityModal(refId, refType){
-  modal(`
-    <h2>Log Meeting, Call or Negotiation Follow-up</h2>
-    <div class="f">
-      <div class="f2">
-        <label>Activity Type<select id="ac1">
-          <option>Meeting</option>
-          <option>Phone Call</option>
-          <option>Site Visit</option>
-          <option>Negotiation</option>
-          <option>Presentation</option>
-        </select></label>
-        <label>Reference Ref ID<input id="ac2" value="${refId||'OPP-101'}"></label>
-      </div>
-      <label>Subject / Title<input id="ac3" value="Commercial terms negotiation & scope finalization"></label>
-      <div class="f2">
-        <label>Conducted By<input id="ac4" value="Rajesh Sharma (BDM) & Suresh Nair (VP Projects)"></label>
-        <label>Client Attendees<input id="ac5" value="Mr. Vikram Adani (Director) & Chief Engineer"></label>
-      </div>
-      <label>Discussion Summary<textarea id="ac6" rows="2">Agreed on final bid price ₹4.85 Cr with 10% mobilization advance against BG. LoA handed over.</textarea></label>
-      <div class="f2">
-        <label>Next Action Plan<input id="ac7" value="Execute 1-Click Project Conversion & Site Setup"></label>
-        <label>Next Follow-up Date<input id="ac8" type="date" value="${addDays(S.today, 3)}"></label>
-      </div>
-    </div>
-    <div style="text-align:right">
-      <button class="btn sec" onclick="closeM()">Cancel</button>
-      <button class="btn" onclick="saveCRMActivity('${refType||'opportunity'}')">Save Activity</button>
-    </div>
-  `);
-}
-
-async function saveCRMActivity(refType){
-  const title = $('#ac3').value.trim();
-  if(!title) return toast('Please enter subject');
-  const body = {
-    ref_id: $('#ac2').value,
-    ref_type: refType,
-    type: $('#ac1').value,
-    title,
-    conducted_by: $('#ac4').value,
-    client_attendees: $('#ac5').value,
-    summary: $('#ac6').value,
-    next_action: $('#ac7').value,
-    next_date: $('#ac8').value,
-    status: 'Completed'
-  };
-  closeM();
-  const res = await api('/api/crm/activities', body);
-  if(res && res.ok){
-    toast('CRM activity logged successfully');
-  }
-}
-
-/* ==============================================================
-   FLAGSHIP WORKFLOW: CRM TO PROJECT CONVERSION
-   ============================================================== */
-
-function convertProjectModal(oppId){
-  const o = (S.opportunities||[]).find(x => x.id === oppId) || {
-    id: 'OPP-101', client_name: 'ABC Infrastructure Pvt. Ltd.',
-    title: 'ABC Commercial Hub Construction (G+8)', est_val: 50000000
-  };
-  const b = (S.bids||[]).find(x => x.opp_id === oppId || x.client === o.client_name);
-  const contractVal = b ? b.bid_price : 48500000;
-
-  modal(`
-    <h2>🚀 CRM to Project Conversion – 1-Click Setup</h2>
-    <p class="mut" style="margin-bottom:12px">Transferring won opportunity <b>${o.id}</b> into active <b>Project Management</b> module with 12-Stage WBS.</p>
-    
-    <div class="card" style="background:#f8f9fa;margin-bottom:12px;padding:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <b>Client: ${o.client_name}</b>
-        <span class="tag t-ok" style="font-weight:700">Tender Awarded</span>
-      </div>
-      <div>Contract Value: <b style="color:#2f9e44;font-size:16px">${mn(contractVal)}</b> (Budget: ${mn(o.est_val)})</div>
-    </div>
-
-    <div class="f">
-      <label>Project Name<input id="cp1" value="ABC Commercial Hub – Visakhapatnam (G+8)"></label>
-      <div class="f2">
-        <label>Client Authority<input id="cp2" value="${o.client_name}"></label>
-        <label>Contract Value (₹)<input id="cp3" type="number" value="${contractVal}"></label>
-      </div>
-      <div class="f2">
-        <label>City<input id="cp4" value="Visakhapatnam"></label>
-        <label>Project Type<select id="cp5"><option>Commercial</option><option>Apartment</option><option>Villa</option><option>Industrial</option></select></label>
-      </div>
-      <div class="f2">
-        <label>Built-up Area (sq.m)<input id="cp6" type="number" value="4500"></label>
-        <label>Floors<input id="cp7" type="number" value="8"></label>
-      </div>
-      <label>Site Address<input id="cp8" value="Plot 42, Port Access Corridor, Harbour Road"></label>
-      
-      <div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:12px">
-        <b>Automatic 12-Stage WBS Setup:</b>
-        <div style="color:#6b7686;margin-top:4px">
-          1. Mobilization • 2. Excavation • 3. Substructure PCC/RCC • 4. Plinth Beam • 5. RCC Framing G+1..4 • 6. RCC Framing G+5..8 • 7. Brickwork • 8. Plastering • 9. MEP • 10. Flooring • 11. Finishes • 12. Final Handover
-        </div>
-      </div>
-    </div>
-    <div style="text-align:right">
-      <button class="btn sec" onclick="closeM()">Cancel</button>
-      <button class="btn ok" style="font-weight:700;padding:9px 18px" onclick="executeProjectConversion('${oppId}')">✓ Confirm & Create Active Enterprise Project</button>
-    </div>
-  `);
-}
-
-async function executeProjectConversion(oppId){
-  const customData = {
-    name: $('#cp1').value,
-    client: $('#cp2').value,
-    contract: +$('#cp3').value || 48500000,
-    city: $('#cp4').value,
-    type: $('#cp5').value,
-    area: +$('#cp6').value || 4500,
-    floors: +$('#cp7').value || 8,
-    addr: $('#cp8').value
-  };
-  closeM();
-  const res = await api('/api/crm/convert-to-project', { oppId, customData });
-  if(res && res.ok){
-    const newPid = res.result.projectId;
-    toast('🚀 Project ' + newPid + ' successfully created with 12 WBS stages!');
-    modal(`
-      <div style="text-align:center;padding:10px 0">
-        <div style="font-size:42px;margin-bottom:8px">🎉</div>
-        <h2>Project ${newPid} is Now Active!</h2>
-        <p class="mut" style="margin:8px 0 16px">The business opportunity has been converted into an active execution project with 12-stage WBS, engineering team, and material allocation.</p>
-        <div style="display:flex;justify-content:center;gap:10px">
-          <button class="btn sec" onclick="closeM()">Stay in CRM</button>
-          <button class="btn ok" style="font-weight:700" onclick="closeM(); openProject('${newPid}')">Open Project ${newPid} in Project Management →</button>
-        </div>
-      </div>
-    `);
-  }
-}
 
 /* ==============================================================
    MODULE 3: PROJECTS
