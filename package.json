@@ -1,0 +1,20 @@
+{
+  "name": "construction-erp",
+  "version": "1.0.0",
+  "description": "Full-stack Construction ERP with Node.js, SQLite, and Interactive Visual MIS Dashboards",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "seed": "node backend/db.js",
+    "test": "node backend/server.js --test"
+  },
+  "keywords": [
+    "construction",
+    "erp",
+    "sqlite",
+    "mis-dashboard"
+  ],
+  "author": "Global Construction ERP",
+  "license": "ISC",
+  "type": "commonjs"
+}
