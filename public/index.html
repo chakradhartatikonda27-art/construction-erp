@@ -2,19 +2,41 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Siyantech Global Construction ERP – Enterprise Edition</title>
 <style>
-:root{--bg:#f4f6f9;--card:#fff;--ink:#1c2430;--mut:#6b7686;--line:#e3e8ef;--pri:#e8590c;--pri2:#fff1e8;--dark:#141b26;--ok:#2f9e44;--warn:#f08c00;--bad:#e03131;--blue:#1c7ed6;--sidebar:#0f1520}
+:root{
+  --bg:#f8fafc;
+  --card:#ffffff;
+  --ink:#0f172a;
+  --mut:#64748b;
+  --line:#e2e8f0;
+  --pri:#e8590c;
+  --pri2:#fff7ed;
+  --sidebar-bg:#ffffff;
+  --sidebar-border:#eaedf2;
+  --sidebar-text:#334155;
+  --sidebar-hover:#f1f5f9;
+  --sidebar-active:#f1f5f9;
+  --sidebar-icon:#64748b;
+  --ok:#16a34a;
+  --warn:#d97706;
+  --bad:#dc2626;
+  --blue:#2563eb;
+  --dark:#0f172a;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:13.5px;display:flex;min-height:100vh}
-aside{width:240px;background:var(--sidebar);color:#c9d1dc;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
-.brand{padding:16px 18px;color:#fff;font-weight:700;font-size:15px;border-bottom:1px solid #1f2a3a;background:#141b26}
-.brand b{color:var(--pri)}.brand small{display:block;font-weight:400;color:#8995a6;font-size:10.5px;margin-top:2px;letter-spacing:0.02em}
-.nav-role-badge{padding:8px 18px 4px;font-size:10.5px;color:#8995a6;text-transform:uppercase;letter-spacing:0.05em;display:flex;justify-content:space-between;align-items:center}
-.nav-role-badge a{color:var(--pri);cursor:pointer;font-size:10.5px;text-decoration:none;font-weight:600}
-nav{flex:1;padding:6px 0 30px}
-nav a{display:flex;align-items:center;justify-content:space-between;padding:8px 18px;color:#b6c2d1;cursor:pointer;border-left:3px solid transparent;font-size:12.5px;font-weight:500;text-decoration:none}
-nav a:hover{background:#182232;color:#fff}
-nav a.on{background:#1f2d42;border-left-color:var(--pri);color:#fff;font-weight:600}
-nav .bd{background:var(--pri);color:#fff;border-radius:99px;padding:1px 6px;font-size:10.5px;font-weight:700}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:13.5px;display:flex;min-height:100vh}
+aside{width:250px;background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.brand-bar{padding:16px 18px;font-size:12px;font-weight:700;color:#64748b;letter-spacing:0.04em;text-transform:uppercase;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--sidebar-border)}
+.brand-bar svg{color:#475569;flex-shrink:0}
+nav{flex:1;padding:10px 10px 30px}
+nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;color:var(--sidebar-text);font-size:13px;font-weight:500;text-decoration:none;border-radius:8px;margin-bottom:2px;cursor:pointer;transition:all .15s ease}
+nav a:hover{background:var(--sidebar-hover);color:#0f172a}
+nav a.on{background:var(--sidebar-active);color:#0f172a;font-weight:600}
+nav a svg{color:var(--sidebar-icon);flex-shrink:0;transition:color .15s ease}
+nav a:hover svg,nav a.on svg{color:#0f172a}
+nav .nav-divider{height:1px;background:var(--sidebar-border);margin:10px 6px}
+nav .nav-section-title{padding:6px 12px 4px;font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em}
+nav .bd{margin-left:auto;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;border-radius:99px;padding:1px 6px;font-size:10px;font-weight:700}
+nav a.on .bd{background:var(--pri);color:#fff;border-color:var(--pri)}
 main{flex:1;min-width:0;display:flex;flex-direction:column}
 header{background:#fff;border-bottom:1px solid var(--line);padding:9px 18px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5;flex-wrap:wrap}
 header h1{font-size:16px;flex:1;min-width:140px;font-weight:700;color:var(--dark);display:flex;align-items:center;gap:8px}
@@ -26,23 +48,22 @@ select,.inp,input,textarea{border:1px solid var(--line);border-radius:7px;paddin
 .wrap{padding:18px 20px 60px;flex:1}
 .grid{display:grid;gap:13px}.kpis{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:13px}
 .two{grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}
-.card{background:#fff;border:1px solid var(--line);border-radius:11px;padding:14px;margin-bottom:13px;box-shadow:0 1px 3px rgba(0,0,0,0.03)}
+.card{background:#fff;border:1px solid var(--line);border-radius:11px;padding:14px;margin-bottom:13px;box-shadow:0 1px 3px rgba(0,0,0,0.02)}
 .card h3{font-size:13.5px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;color:var(--dark)}
 .kpi{margin:0}.kpi .l{color:var(--mut);font-size:11.5px;font-weight:500}.kpi .v{font-size:22px;font-weight:700;margin:3px 0;color:var(--dark)}.kpi .d{font-size:11.5px;color:var(--mut)}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
-th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);padding:7px;border-bottom:1px solid var(--line);white-space:nowrap;background:#fafbfd}
-td{padding:7.5px 7px;border-bottom:1px solid #eef1f5;vertical-align:middle}tr:last-child td{border-bottom:0}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);padding:7.5px 7px;border-bottom:1px solid var(--line);white-space:nowrap;background:#fafbfd}
+td{padding:8px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}tr:last-child td{border-bottom:0}
 .num{text-align:right;font-variant-numeric:tabular-nums}.mut{color:var(--mut)}.dn{color:var(--bad)}.up{color:var(--ok)}
-tr.click{cursor:pointer}tr.click:hover{background:#fafbfd}
+tr.click{cursor:pointer}tr.click:hover{background:#f8fafc}
 .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
-.t-ok{background:#e6f6ea;color:#237a37}.t-warn{background:#fff3d6;color:#a86a00}.t-bad{background:#fde8e8;color:#b02525}.t-blue{background:#e3f0fc;color:#165f9f}.t-gray{background:#edf0f4;color:#4b5666}
+.t-ok{background:#e6f6ea;color:#237a37}.t-warn{background:#fff3d6;color:#a86a00}.t-bad{background:#fde8e8;color:#b02525}.t-blue{background:#e3f0fc;color:#165f9f}.t-gray{background:#f1f5f9;color:#475569}
 .bar{height:7px;background:#edf0f4;border-radius:99px;overflow:hidden;min-width:60px}.bar i{display:block;height:100%;background:var(--pri)}.bar.g i{background:var(--ok)}.bar.r i{background:var(--bad)}
-.tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap;background:#edf1f7;padding:3px;border-radius:8px;border:1px solid #e2e7ef}
+.tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap;background:#edf2f7;padding:3px;border-radius:8px;border:1px solid #e2e8f0}
 .tabs button{border:0;background:transparent;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;color:#526071}
 .tabs button.on{background:#fff;color:var(--dark);box-shadow:0 1px 2px rgba(0,0,0,0.06)}
 .action-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 12px}
 .action-group{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.note{background:#fff8e6;border:1px solid #ffe4a1;border-radius:8px;padding:8px 13px;font-size:12px;margin-bottom:12px;color:#6b4e00}
 .f{display:grid;gap:9px;margin-bottom:11px}.f label{font-size:11.5px;color:var(--mut);display:grid;gap:3px;font-weight:500}.f input,.f select,.f textarea{width:100%}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .modal{position:fixed;inset:0;background:rgba(10,15,25,.55);display:none;place-items:center;z-index:50;padding:14px;backdrop-filter:blur(2px)}
@@ -51,32 +72,28 @@ tr.click{cursor:pointer}tr.click:hover{background:#fafbfd}
 .mbox h2{font-size:16px;margin-bottom:12px;color:var(--dark);border-bottom:1px solid var(--line);padding-bottom:7px}
 .toast{position:fixed;bottom:16px;right:16px;background:var(--dark);color:#fff;padding:9px 15px;border-radius:8px;opacity:0;transition:.25s;pointer-events:none;z-index:60;max-width:380px;font-size:12.5px;box-shadow:0 4px 14px rgba(0,0,0,0.25)}
 .toast.on{opacity:1}
-.stg{display:grid;grid-template-columns:30px 1.6fr 1fr 1.1fr auto;gap:9px;align-items:center;padding:9px 4px;border-bottom:1px solid #eef1f5}
-.stg:last-child{border:0}.stg .c{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-weight:700;font-size:11px;color:var(--mut)}
-.stg.DONE .c{background:var(--ok);border-color:var(--ok);color:#fff}.stg.IP .c{border-color:var(--pri);color:var(--pri)}.stg.lock{opacity:.55}
-.login{position:fixed;inset:0;background:linear-gradient(135deg,#0f1520,#223044);z-index:80;display:none;place-items:center;padding:16px}.login.on{display:grid}
-.lbox{background:#fff;border-radius:14px;padding:24px;width:min(720px,100%)}.lbox h2{font-size:20px;color:var(--dark)}.lbox p{color:var(--mut);margin:4px 0 16px;font-size:13px}
-.ugrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:9px}
-.uc{border:1px solid var(--line);border-radius:9px;padding:11px;cursor:pointer}.uc:hover{border-color:var(--pri);background:var(--pri2)}.uc b{display:block;color:var(--dark)}.uc span{font-size:11.5px;color:var(--mut)}
-.log{font-size:12px;padding:6px 0;border-bottom:1px solid #eef1f5}.log small{color:var(--mut)}
+.log{font-size:12px;padding:6px 0;border-bottom:1px solid #f1f5f9}.log small{color:var(--mut)}
 .db-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:#e6f6ea;color:#237a37;border:1px solid #b6e2c0}
 #rb{display:inline-flex;background:#edf0f4;border-radius:99px;padding:2px;gap:2px;flex-wrap:wrap}
-#rb button{border:0;background:transparent;border-radius:99px;padding:4px 10px;cursor:pointer;font-size:11.5px;font-weight:600;color:#4b5666;white-space:nowrap}
+#rb button{border:0;background:transparent;border-radius:99px;padding:4px 9px;cursor:pointer;font-size:11px;font-weight:600;color:#475569;white-space:nowrap}
 #rb button:hover{color:var(--ink)}#rb button.on{background:var(--dark);color:#fff}
-@media(max-width:860px){aside{display:none}.two{grid-template-columns:1fr}.stg{grid-template-columns:26px 1fr;}}
+@media(max-width:860px){aside{display:none}.two{grid-template-columns:1fr}}
 </style></head><body>
+
 <aside>
-<div class="brand">SIYANTECH <b>CONSTRUCTION ERP</b><small>Enterprise Edition · Tender to Handover</small></div>
-<div class="nav-role-badge">
-  <span>ROLE: <b id="aside-role-name">Owner / MD</b></span>
-  <a onclick="toggleFilterRole()" id="role-filter-toggle" title="Toggle role-based filtered menu vs all modules">Role View</a>
+<div class="brand-bar">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="9" y1="22" x2="9" y2="18"></line><line x1="15" y1="22" x2="15" y2="18"></line><line x1="9" y1="18" x2="15" y2="18"></line><line x1="8" y1="6" x2="10" y2="6"></line><line x1="14" y1="6" x2="16" y2="6"></line><line x1="8" y1="10" x2="10" y2="10"></line><line x1="14" y1="10" x2="16" y2="10"></line><line x1="8" y1="14" x2="10" y2="14"></line><line x1="14" y1="14" x2="16" y2="14"></line>
+  </svg>
+  <span>SIYANTECH CONSTRUCTION ERP</span>
 </div>
 <nav id="nav"></nav>
 </aside>
+
 <main>
 <header>
 <h1 id="title">Dashboard</h1>
-<span class="db-badge" title="Persistent SQLite Database Backend">● SQLite WAL</span>
+<span class="db-badge" title="Persistent SQLite Database Backend">● SQLite DB</span>
 <select id="ap" title="Active project"></select>
 <span class="inp" id="dt" style="display:flex;gap:4px;align-items:center">📅 <b id="dtv"></b> <button class="btn sec sm" onclick="adv(1)">+1d</button><button class="btn sec sm" onclick="adv(7)">+7d</button></span>
 <div class="rb" id="rb"></div>
@@ -84,8 +101,8 @@ tr.click{cursor:pointer}tr.click:hover{background:#fafbfd}
 </header>
 <div class="wrap" id="view"></div>
 </main>
+
 <div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
-<div class="login" id="login"><div class="lbox"><h2>Siyantech Global Construction ERP</h2><p>Select your persona to explore dynamic role menus and permissions:</p><div class="ugrid" id="ugrid"></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -102,35 +119,49 @@ const ROLES={
   acc:'Chief Accountant'
 };
 
-/* 15 Final Major Modules */
-const ALL_NAV=[
-  ['dash','1. Dashboard','Executive dashboard, project KPIs, alerts'],
-  ['crm','2. CRM & Tenders','Leads, clients, tenders, bids'],
-  ['proj','3. Projects','Project setup, planning, WBS, scheduling, milestones'],
-  ['site','4. Site Operations','DPR, tasks, labour, attendance, GPS, site reports'],
-  ['eng','5. Engineering','BOQ, estimation, drawings, BIM, RFI, BBS'],
-  ['proc','6. Procurement','Indents, RFQs, quotations, purchase orders, suppliers'],
-  ['inv','7. Inventory','Warehouses, GRN, stock, material issue, transfers'],
-  ['hr','8. Workforce & HR','Employees, payroll, leave, contractors'],
-  ['fleet','9. Equipment & Fleet','Machinery, vehicles, fuel, maintenance'],
-  ['contracts','10. Contracts & Commercial','Subcontracts, variations, claims, measurements'],
-  ['fin','11. Finance & Accounts','Billing, accounting, cash flow, retention, budgets'],
-  ['qa','12. Quality & Safety','QA/QC, inspections, NCR, HSE, permits'],
-  ['docs','13. Documents & Approvals','Documents, revisions, workflows, approvals'],
-  ['handover','14. Handover & Maintenance','Snagging, handover, warranty, AMC'],
-  ['reports','15. Reports & AI','Analytics, forecasting, AI assistant']
+/* SVG Icons matching user's design screenshot */
+const ICONS = {
+  dash: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>`,
+  crm: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
+  proj: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1"></rect></svg>`,
+  eng: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"></circle><line x1="12" y1="7" x2="5" y2="21"></line><line x1="12" y1="7" x2="19" y2="21"></line><line x1="8" y1="15" x2="16" y2="15"></line></svg>`,
+  site: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18h20a1 1 0 0 0 1-1c0-4.4-3.6-8-8-8H9c-4.4 0-8 3.6-8 8a1 1 0 0 0 1 1z"></path><path d="M10 9V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"></path></svg>`,
+  proc: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>`,
+  inv: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`,
+  hr: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
+  fleet: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>`,
+  contracts: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
+  fin: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line><circle cx="18" cy="15" r="1.5"></circle></svg>`,
+  qa: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>`,
+  reports: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line><polyline points="3 20 21 20"></polyline></svg>`,
+  docs: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>`,
+  handover: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"></circle><path d="m21 2-9.6 9.6"></path><path d="m15.5 7.5 3 3L22 7l-3-3"></path></svg>`,
+  settings: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`
+};
+
+/* 12 Core Business Modules */
+const CORE_NAV = [
+  ['dash', 'Dashboard'],
+  ['crm', 'CRM & Tenders'],
+  ['proj', 'Project Management'],
+  ['eng', 'Engineering & Estimation'],
+  ['site', 'Site Operations'],
+  ['proc', 'Procurement & Vendors'],
+  ['inv', 'Inventory & Materials'],
+  ['hr', 'HR & Workforce'],
+  ['fleet', 'Equipment & Fleet'],
+  ['contracts', 'Contracts & Commercial'],
+  ['fin', 'Finance & Accounting'],
+  ['qa', 'Quality, Safety & Compliance']
 ];
 
-/* Role-specific designated menus */
-const ROLE_MENUS = {
-  owner: ['dash', 'proj', 'fin', 'reports', 'docs'],
-  pm: ['dash', 'proj', 'site', 'eng', 'proc', 'inv', 'contracts', 'qa', 'docs'],
-  eng: ['dash', 'site', 'eng', 'proc', 'qa', 'docs'],
-  acc: ['dash', 'fin', 'hr', 'contracts', 'reports'],
-  store: ['proc', 'inv', 'reports'],
-  sup: ['site', 'proc', 'fleet'],
-  qa: ['qa', 'eng', 'docs']
-};
+/* Platform Capabilities & Reporting */
+const PLATFORM_NAV = [
+  ['reports', 'Reports & Analytics'],
+  ['docs', 'Documents & Approvals'],
+  ['handover', 'Handover & Maintenance'],
+  ['settings', 'Settings & Administration']
+];
 
 const PERM={
   createProject:['owner','pm'],team:['owner','pm'],stage:['owner','pm'],approve:['owner','pm'],
@@ -170,7 +201,6 @@ let S={
   ap:'P003',
   v:'dash',
   subTab:{},
-  filterByRole:true,
   users:USERS,
   projects:[],
   stock:{},
@@ -213,7 +243,7 @@ async function api(path, body=null){
     }
     return json;
   }catch(e){
-    console.warn('API error, falling back:', e);
+    console.warn('API error:', e);
     return null;
   }
 }
@@ -304,22 +334,14 @@ function pending(){
 }
 const qaOK=(p,k)=>(S.insp||[]).some(i=>i.pid===p.id&&i.k===k&&i.res==='Passed');
 
-function toggleFilterRole(){
-  S.filterByRole = !S.filterByRole;
-  render();
-  toast(S.filterByRole ? 'Menu filtered for ' + ROLES[me().role] : 'Showing all 15 enterprise modules');
-}
-
 function rolebar(){
   return USERS.map(u=>`<button class="${u.id===S.me?'on':''}" onclick="switchUser('${u.id}')">${u.name.split(' ')[0]} <small>(${u.role})</small></button>`).join('');
 }
 
 async function switchUser(id){
   S.me=id;
-  const currentNavKeys = (S.filterByRole ? ROLE_MENUS[me().role] : null) || ALL_NAV.map(x=>x[0]);
-  if(!currentNavKeys.includes(S.v)) S.v = currentNavKeys[0] || 'dash';
   render();
-  toast(`Logged in as ${me().name} (${ROLES[me().role]})`);
+  toast(`Active user: ${me().name} (${ROLES[me().role]})`);
   await api('/api/system/switch-user', { userId: id });
 }
 
@@ -340,42 +362,46 @@ function getTab(modKey, defaultTab){
   return (S.subTab && S.subTab[modKey]) || defaultTab;
 }
 
-/* 3-Level Subtab bar helper */
 function tabNav(modKey, tabs){
   const cur = getTab(modKey, tabs[0][0]);
   return `<div class="tabs">${tabs.map(([k,l])=>`<button class="${cur===k?'on':''}" onclick="setTab('${modKey}','${k}')">${l}</button>`).join('')}</div>`;
 }
 
-/* 3-Level Action Toolbar helper */
 function actionBar(actions, filters=''){
   return `<div class="action-bar"><div class="action-group">${actions}</div><div class="action-group">${filters}</div></div>`;
 }
 
 function render(){
-  const v=vis(), pe=pending(), u=me();
-  $('#aside-role-name').textContent = ROLES[u.role];
-  $('#role-filter-toggle').textContent = S.filterByRole ? 'Role View ✓' : 'All Modules';
+  const v=vis(), pe=pending();
   $('#ap').innerHTML=v.map(p=>`<option value="${p.id}" ${p.id===S.ap?'selected':''}>${p.id} · ${p.name}</option>`).join('')||'<option>No project</option>';
   $('#dtv').textContent=S.today;
   $('#rb').innerHTML=rolebar();
 
-  // Determine active visible navigation items
-  let navItems = ALL_NAV;
-  if(S.filterByRole && ROLE_MENUS[u.role]){
-    const allowed = ROLE_MENUS[u.role];
-    navItems = ALL_NAV.filter(n=>allowed.includes(n[0]));
-  }
-
   const cnt=k=>{const n=pe.filter(x=>x[0]===k).length;return n?`<span class="bd">${n}</span>`:''};
-  $('#nav').innerHTML=navItems.map(([k,l])=>`<a class="${S.v===k||(S.v==='pd'&&k==='proj')?'on':''}" onclick="go('${k}')">${l}${cnt(k)}</a>`).join('');
 
-  const modDef = ALL_NAV.find(n=>n[0]===S.v);
+  /* Left Sidebar Navigation with Icons */
+  let navHtml = '';
+  CORE_NAV.forEach(([k, l]) => {
+    const isAct = (S.v === k || (S.v === 'pd' && k === 'proj'));
+    navHtml += `<a class="${isAct?'on':''}" onclick="go('${k}')">${ICONS[k]||''}<span>${l}</span>${cnt(k)}</a>`;
+  });
+
+  navHtml += `<div class="nav-divider"></div>`;
+  PLATFORM_NAV.forEach(([k, l]) => {
+    const isAct = (S.v === k);
+    navHtml += `<a class="${isAct?'on':''}" onclick="go('${k}')">${ICONS[k]||''}<span>${l}</span>${cnt(k)}</a>`;
+  });
+
+  $('#nav').innerHTML = navHtml;
+
+  const allList = [...CORE_NAV, ...PLATFORM_NAV];
+  const modDef = allList.find(n=>n[0]===S.v);
   $('#title').innerHTML = S.v==='pd' ? 'Project Details' : (modDef ? modDef[1] : 'Module');
 
   if(V[S.v]){
     $('#view').innerHTML = V[S.v]();
   } else {
-    $('#view').innerHTML = `<div class="card"><h3>Module in Progress</h3><p class="mut">This module view is currently loading or updating.</p></div>`;
+    $('#view').innerHTML = `<div class="card"><h3>Module</h3><p class="mut">This module view is currently loading or updating.</p></div>`;
   }
   save();
 }
@@ -444,11 +470,8 @@ V.dash=()=>{
         <svg viewBox="0 0 700 180" style="width:100%;height:180px">
           <line x1="50" y1="150" x2="680" y2="150" stroke="#cbd5e1" stroke-width="1.5"/>
           <line x1="50" y1="20" x2="50" y2="150" stroke="#cbd5e1" stroke-width="1.5"/>
-          <!-- Planned baseline curve -->
           <path d="M50 150 Q 250 130, 360 80 T 680 25" fill="none" stroke="#94a3b8" stroke-width="3" stroke-dasharray="5,4"/>
-          <!-- Actual progress curve -->
           <path d="M50 150 Q 230 140, 350 95" fill="none" stroke="#e8590c" stroke-width="3.5"/>
-          <!-- Current day marker -->
           <line x1="350" y1="20" x2="350" y2="150" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="3,3"/>
           <text x="355" y="40" fill="#2563eb" font-size="11" font-weight="bold">Today (${S.today})</text>
           <text x="60" y="30" fill="#94a3b8" font-size="11">Planned S-Curve</text>
@@ -465,7 +488,7 @@ V.dash=()=>{
   ${tab==='alerts'?`
     <div class="card">
       <h3>Active System Alerts & Approval Matrix</h3>
-      <table style="margin-top:8px">
+      <table>
         <thead><tr><th>Type</th><th>Module</th><th>Severity</th><th>Description</th><th>Action</th></tr></thead>
         <tbody>
           <tr><td><span class="tag t-bad">Delayed</span></td><td>Project Management</td><td>High</td><td>P003 Slab Work delayed by rain & labour shortage</td><td><button class="btn sm sec" onclick="go('site')">Review DPR</button></td></tr>
@@ -744,7 +767,6 @@ V.proj=()=>{
 `;
 };
 
-/* Project Detail View */
 V.pd=()=>{
   const p=S.projects.find(x=>x.id===(S.pd||S.ap))||P();
   if(!p) return '<p>Project not found.</p>';
@@ -861,7 +883,6 @@ V.site=()=>{
   const p = P();
   const dprs = (S.dprs||[]).filter(d=>d.pid===p.id);
   const roster = p.roster || [];
-  const ipStages = (p.stages||[]).filter(s=>s.status==='IP');
 
   return `
   ${tabNav('site', [
@@ -908,14 +929,14 @@ V.site=()=>{
       <table>
         <thead><tr><th>Worker ID</th><th>Name</th><th>Trade</th><th>Daily Wage</th><th>Check In</th><th>Hours</th><th>Overtime</th><th>Total Daily Cost</th></tr></thead>
         <tbody>
-          ${roster.map((w,i)=>`<tr>
+          ${roster.map(w=>`<tr>
             <td><b>${w.id}</b></td>
             <td>${w.name}</td>
             <td><span class="tag t-gray">${w.trade}</span></td>
             <td>₹${w.wage}</td>
-            <td><input type="time" value="08:30" style="width:90px" id="in_${w.id}"></td>
-            <td><input type="number" value="8" style="width:60px" id="hr_${w.id}"></td>
-            <td><input type="number" value="0" style="width:60px" id="ot_${w.id}"></td>
+            <td><input type="time" value="08:30" style="width:90px"></td>
+            <td><input type="number" value="8" style="width:60px"></td>
+            <td><input type="number" value="0" style="width:60px"></td>
             <td><b>₹${w.wage}</b></td>
           </tr>`).join('')}
         </tbody>
@@ -1018,7 +1039,7 @@ function geoCheckIn(){
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(
       pos=>toast(`Verified On-Site! Lat: ${pos.coords.latitude.toFixed(4)}, Lng: ${pos.coords.longitude.toFixed(4)}`),
-      err=>toast('GPS Geofence: Verified On-Site within 24m site perimeter')
+      ()=>toast('GPS Geofence: Verified On-Site within 24m site perimeter')
     );
   } else {
     toast('GPS Geofence: Verified On-Site within 24m site perimeter');
@@ -1432,7 +1453,6 @@ async function saveGRN(){
   const m = $('#grn_m').value;
   const qty = +$('#grn_q').value||50;
   closeM();
-  // Simulate receipt
   const res = await api('/api/materials/request', { projectId: p.id, m, qty });
   if(res && res.id){
     await api(`/api/materials/requests/${res.id}/approve`);
@@ -1610,7 +1630,6 @@ V.fleet=()=>{
 };
 
 function addEquipmentModal(){
-  const p = P();
   modal(`
     <h2>Register Heavy Machinery / Vehicle</h2>
     <div class="f">
@@ -1948,7 +1967,7 @@ async function payInvoice(invId){
 }
 
 /* ==============================================================
-   MODULE 12: QUALITY & SAFETY
+   MODULE 12: QUALITY, SAFETY & COMPLIANCE
    ============================================================== */
 V.qa=()=>{
   const tab = getTab('qa', 'inspections');
@@ -2116,7 +2135,121 @@ async function saveHSE(){
 }
 
 /* ==============================================================
-   MODULE 13: DOCUMENTS & APPROVALS
+   MODULE 13: REPORTS & ANALYTICS
+   ============================================================== */
+V.reports=()=>{
+  const tab = getTab('reports', 'mis');
+  const p = P();
+
+  return `
+  ${tabNav('reports', [
+    ['mis','Visual MIS Dashboards (S-Curve)'],
+    ['financial','Financial & Cost Reports'],
+    ['procurement','Procurement & Stock Trends'],
+    ['ai','AI Construction Assistant']
+  ])}
+
+  ${tab==='mis'?`
+    <div class="card">
+      <h3>Executive S-Curve (Planned vs Actual Cumulative %)</h3>
+      <div style="background:#f8fafc;padding:15px;border-radius:9px;border:1px solid #e2e8f0;margin-bottom:12px">
+        <svg viewBox="0 0 700 200" style="width:100%;height:200px">
+          <line x1="50" y1="170" x2="680" y2="170" stroke="#cbd5e1" stroke-width="1.5"/>
+          <line x1="50" y1="20" x2="50" y2="170" stroke="#cbd5e1" stroke-width="1.5"/>
+          <path d="M50 170 Q 240 145, 360 85 T 680 25" fill="none" stroke="#64748b" stroke-width="3" stroke-dasharray="6,4"/>
+          <path d="M50 170 Q 220 155, 350 102" fill="none" stroke="#e8590c" stroke-width="3.5"/>
+          <circle cx="350" cy="102" r="5" fill="#e8590c"/>
+          <line x1="350" y1="20" x2="350" y2="170" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="355" y="35" fill="#2563eb" font-size="11" font-weight="bold">Today (${S.today})</text>
+          <text x="60" y="30" fill="#64748b" font-size="11">Planned Cumulative Baseline</text>
+          <text x="240" y="125" fill="#e8590c" font-size="11" font-weight="bold">Actual Progress</text>
+        </svg>
+      </div>
+      <div style="text-align:right">
+        <button class="btn sec" onclick="window.print()">🖨️ Print Executive Report</button>
+      </div>
+    </div>
+  `:''}
+
+  ${tab==='financial'?`
+    <div class="card">
+      <h3>Project Financial Variance Analysis</h3>
+      <table>
+        <thead><tr><th>Project</th><th class="num">Contract Value</th><th class="num">Budget Cap</th><th class="num">Actual Incurred</th><th class="num">Cost Variance</th><th>Performance</th></tr></thead>
+        <tbody>
+          ${vis().map(pr=>{
+            const act = actual(pr);
+            const diff = pr.budget - act;
+            return `<tr>
+              <td><b>${pr.name}</b></td>
+              <td class="num">${mn(pr.contract)}</td>
+              <td class="num">${mn(pr.budget)}</td>
+              <td class="num">${mn(act)}</td>
+              <td class="num" style="color:${diff>=0?'#2f9e44':'#e03131'}">${diff>=0?'+':''}${mn(diff)}</td>
+              <td>${diff>=0?'<span class="tag t-ok">Under Budget</span>':'<span class="tag t-bad">Overrun Alert</span>'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `:''}
+
+  ${tab==='procurement'?`
+    <div class="card">
+      <h3>Material Procurement & Inventory Turnover</h3>
+      <table>
+        <thead><tr><th>Material</th><th>Unit</th><th class="num">Total Procured</th><th class="num">Total Consumed</th><th class="num">Balance Stock</th></tr></thead>
+        <tbody>
+          ${MATS.map(m=>`<tr>
+            <td><b>${m[1]}</b></td>
+            <td>${m[2]}</td>
+            <td class="num">1,200 ${m[2]}</td>
+            <td class="num">1,120 ${m[2]}</td>
+            <td class="num" style="font-weight:700">80 ${m[2]}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  `:''}
+
+  ${tab==='ai'?`
+    <div class="card" style="border:2px solid #fdba74;background:#fffaf5">
+      <h3>🤖 Siyantech AI Construction Assistant</h3>
+      <p style="margin-bottom:12px;color:#7c2d12">AI predictive insights, concrete mix designs, schedule delay risk modeling, and automated quantity estimation:</p>
+      <div class="f">
+        <label>Ask Construction Assistant / Run Prediction:<input id="ai_q" value="Analyze schedule delay risk for P003 Gachibowli High-rise"></label>
+        <button class="btn" style="width:fit-content" onclick="runAIAssistant()">Run AI Analysis</button>
+      </div>
+      <div id="ai_res" style="margin-top:12px;padding:12px;background:#fff;border-radius:8px;border:1px solid #fed7aa;font-size:13px;line-height:1.5">
+        <b>💡 AI Analysis Summary for P003 (Financial District G+15):</b>
+        <ul style="margin:8px 0 0 18px">
+          <li><b>Delay Risk:</b> Moderate (4.2 days behind baseline due to recent monsoons and bar-bender crew shortage).</li>
+          <li><b>Mitigation Strategy:</b> Deploy second shift for 4th floor slab shuttering to recoup 3 days before casting.</li>
+          <li><b>Cost Variance Projection:</b> CPI is 1.04. Projected savings at completion: ~₹12.4 Lakhs if current material rates hold.</li>
+          <li><b>Material Advisory:</b> Cement reorder threshold will be reached in 3 days; raise PO for 600 bags by Friday.</li>
+        </ul>
+      </div>
+    </div>
+  `:''}
+`;
+};
+
+function runAIAssistant(){
+  const q = $('#ai_q').value;
+  $('#ai_res').innerHTML = `
+    <b>⚡ AI Analysis generated for: "${q}"</b>
+    <p style="margin-top:6px;color:#334155">Analysis computed based on real-time SQLite database records (40 DPRs, 891 labor muster records, 36 PRs, and active WBS schedule):</p>
+    <ul style="margin:8px 0 0 18px">
+      <li>All concrete cube test results satisfy M25 / M30 characteristic strength criteria as per IS 456.</li>
+      <li>Procurement delivery on-time rate is 94.2% across Vizag Build Mart and Steel Authority dealers.</li>
+      <li>Next milestone billing trigger: Stage 4 (Pillars & Beams) at 100% will unlock ₹31,20,000 client invoice.</li>
+    </ul>
+  `;
+  toast('AI Assistant analysis completed');
+}
+
+/* ==============================================================
+   MODULE 14: DOCUMENTS & APPROVALS
    ============================================================== */
 V.docs=()=>{
   const tab = getTab('docs', 'docs');
@@ -2195,7 +2328,6 @@ V.docs=()=>{
 };
 
 function uploadDocModal(){
-  const p = P();
   modal(`
     <h2>Upload Project Document</h2>
     <div class="f">
@@ -2228,7 +2360,7 @@ async function saveDoc(){
 }
 
 /* ==============================================================
-   MODULE 14: HANDOVER & MAINTENANCE
+   MODULE 15: HANDOVER & MAINTENANCE
    ============================================================== */
 V.handover=()=>{
   const tab = getTab('handover', 'snagging');
@@ -2354,131 +2486,107 @@ async function resolveSnag(id){
 }
 
 /* ==============================================================
-   MODULE 15: REPORTS & AI
+   MODULE 16: SETTINGS & ADMINISTRATION
    ============================================================== */
-V.reports=()=>{
-  const tab = getTab('reports', 'mis');
-  const p = P();
+V.settings=()=>{
+  const tab = getTab('settings', 'rbac');
 
   return `
-  ${tabNav('reports', [
-    ['mis','Visual MIS Dashboards (S-Curve)'],
-    ['financial','Financial & Cost Reports'],
-    ['procurement','Procurement & Stock Trends'],
-    ['ai','AI Construction Assistant']
+  ${tabNav('settings', [
+    ['rbac','Role-Based Access (RBAC)'],
+    ['users','User Directory & Passwords'],
+    ['audit','System Audit Trail (SQLite)'],
+    ['portals','Portals (Client / Vendor / Sub)'],
+    ['whatsapp','WhatsApp Simulated Stream']
   ])}
 
-  ${tab==='mis'?`
+  ${tab==='rbac'?`
     <div class="card">
-      <h3>Executive S-Curve (Planned vs Actual Cumulative %)</h3>
-      <div style="background:#f8fafc;padding:15px;border-radius:9px;border:1px solid #e2e8f0;margin-bottom:12px">
-        <svg viewBox="0 0 700 200" style="width:100%;height:200px">
-          <line x1="50" y1="170" x2="680" y2="170" stroke="#cbd5e1" stroke-width="1.5"/>
-          <line x1="50" y1="20" x2="50" y2="170" stroke="#cbd5e1" stroke-width="1.5"/>
-          <path d="M50 170 Q 240 145, 360 85 T 680 25" fill="none" stroke="#64748b" stroke-width="3" stroke-dasharray="6,4"/>
-          <path d="M50 170 Q 220 155, 350 102" fill="none" stroke="#e8590c" stroke-width="3.5"/>
-          <circle cx="350" cy="102" r="5" fill="#e8590c"/>
-          <line x1="350" y1="20" x2="350" y2="170" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="3,3"/>
-          <text x="355" y="35" fill="#2563eb" font-size="11" font-weight="bold">Today (${S.today})</text>
-          <text x="60" y="30" fill="#64748b" font-size="11">Planned Cumulative Baseline</text>
-          <text x="240" y="125" fill="#e8590c" font-size="11" font-weight="bold">Actual Progress</text>
-        </svg>
-      </div>
-      <div style="text-align:right">
-        <button class="btn sec" onclick="window.print()">🖨️ Print Executive Report</button>
-      </div>
-    </div>
-  `:''}
-
-  ${tab==='financial'?`
-    <div class="card">
-      <h3>Project Financial Variance Analysis</h3>
+      <h3>Role-Based Access Control (RBAC) Matrix</h3>
       <table>
-        <thead><tr><th>Project</th><th class="num">Contract Value</th><th class="num">Budget Cap</th><th class="num">Actual Incurred</th><th class="num">Cost Variance</th><th>Performance</th></tr></thead>
+        <thead><tr><th>System Capability</th><th>Director</th><th>Project Mgr</th><th>Site Eng</th><th>Supervisor</th><th>Stores</th><th>QA Eng</th><th>Accountant</th></tr></thead>
         <tbody>
-          ${vis().map(pr=>{
-            const act = actual(pr);
-            const diff = pr.budget - act;
-            return `<tr>
-              <td><b>${pr.name}</b></td>
-              <td class="num">${mn(pr.contract)}</td>
-              <td class="num">${mn(pr.budget)}</td>
-              <td class="num">${mn(act)}</td>
-              <td class="num" style="color:${diff>=0?'#2f9e44':'#e03131'}">${diff>=0?'+':''}${mn(diff)}</td>
-              <td>${diff>=0?'<span class="tag t-ok">Under Budget</span>':'<span class="tag t-bad">Overrun Alert</span>'}</td>
-            </tr>`;
-          }).join('')}
+          <tr><td>Create & Configure Projects</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Approve WBS Stages</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Submit Daily Progress (DPR)</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Approve DPRs</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Raise Material Indent (PR)</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td>—</td></tr>
+          <tr><td>Issue Purchase Orders (PO)</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>✓</td><td>—</td><td>✓</td></tr>
+          <tr><td>Receive Materials (GRN)</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>✓</td><td>—</td><td>—</td></tr>
+          <tr><td>Perform QA Inspections</td><td>✓</td><td>—</td><td>—</td><td>—</td><td>—</td><td>✓</td><td>—</td></tr>
+          <tr><td>Approve Milestone RA Bills</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
         </tbody>
       </table>
     </div>
   `:''}
 
-  ${tab==='procurement'?`
+  ${tab==='users'?`
     <div class="card">
-      <h3>Material Procurement & Inventory Turnover</h3>
+      <h3>Active User Profiles</h3>
       <table>
-        <thead><tr><th>Material</th><th>Unit</th><th class="num">Total Procured</th><th class="num">Total Consumed</th><th class="num">Balance Stock</th></tr></thead>
+        <thead><tr><th>User ID</th><th>Name</th><th>Role</th><th>Daily Rate</th><th>Status</th></tr></thead>
         <tbody>
-          ${MATS.map(m=>`<tr>
-            <td><b>${m[1]}</b></td>
-            <td>${m[2]}</td>
-            <td class="num">1,200 ${m[2]}</td>
-            <td class="num">1,120 ${m[2]}</td>
-            <td class="num" style="font-weight:700">80 ${m[2]}</td>
-          </tr>`).join('')}
+          ${USERS.map(u=>`<tr><td><b>${u.id}</b></td><td>${u.name}</td><td><span class="tag t-blue">${ROLES[u.role]}</span></td><td>₹${u.cost}</td><td><span class="tag t-ok">Active</span></td></tr>`).join('')}
         </tbody>
       </table>
     </div>
   `:''}
 
-  ${tab==='ai'?`
-    <div class="card" style="border:2px solid #fdba74;background:#fffaf5">
-      <h3>🤖 Siyantech AI Construction Assistant</h3>
-      <p style="margin-bottom:12px;color:#7c2d12">AI predictive insights, concrete mix designs, schedule delay risk modeling, and automated quantity estimation:</p>
-      <div class="f">
-        <label>Ask Construction Assistant / Run Prediction:<input id="ai_q" value="Analyze schedule delay risk for P003 Gachibowli High-rise"></label>
-        <button class="btn" style="width:fit-content" onclick="runAIAssistant()">Run AI Analysis</button>
+  ${tab==='audit'?`
+    <div class="card">
+      <h3>Chronological SQLite Audit Log</h3>
+      <table>
+        <thead><tr><th>Timestamp</th><th>Date</th><th>User</th><th>Action Logged</th><th>Project</th></tr></thead>
+        <tbody>
+          ${S.log.slice(0,25).map(l=>`<tr><td>${l.t.slice(11,19)}</td><td>${l.d}</td><td><b>${l.u}</b></td><td>${l.msg}</td><td>${l.pid||'System'}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  `:''}
+
+  ${tab==='portals'?`
+    <div class="card">
+      <h3>External Stakeholder Portals</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
+        <div class="card" style="margin:0;border:1px solid #e2e8f0">
+          <b>Client Progress Portal</b>
+          <p class="mut" style="font-size:12px;margin:6px 0">Live milestone timeline, payment status, camera feeds & possession dates.</p>
+          <button class="btn sm sec" onclick="toast('Client portal link copied')">Copy Client Access Link</button>
+        </div>
+        <div class="card" style="margin:0;border:1px solid #e2e8f0">
+          <b>Supplier Bidding Portal</b>
+          <p class="mut" style="font-size:12px;margin:6px 0">RFQ bidding, comparative quotes submission, delivery challan uploads.</p>
+          <button class="btn sm sec" onclick="toast('Supplier portal link copied')">Copy Supplier Portal Link</button>
+        </div>
+        <div class="card" style="margin:0;border:1px solid #e2e8f0">
+          <b>Subcontractor RA Bill Portal</b>
+          <p class="mut" style="font-size:12px;margin:6px 0">Joint measurement submissions, measurement sheets, retention status.</p>
+          <button class="btn sm sec" onclick="toast('Subcontractor portal link copied')">Copy Subcontractor Portal Link</button>
+        </div>
       </div>
-      <div id="ai_res" style="margin-top:12px;padding:12px;background:#fff;border-radius:8px;border:1px solid #fed7aa;font-size:13px;line-height:1.5">
-        <b>💡 AI Analysis Summary for P003 (Financial District G+15):</b>
-        <ul style="margin:8px 0 0 18px">
-          <li><b>Delay Risk:</b> Moderate (4.2 days behind baseline due to recent monsoons and bar-bender crew shortage).</li>
-          <li><b>Mitigation Strategy:</b> Deploy second shift for 4th floor slab shuttering to recoup 3 days before casting.</li>
-          <li><b>Cost Variance Projection:</b> CPI is 1.04. Projected savings at completion: ~₹12.4 Lakhs if current material rates hold.</li>
-          <li><b>Material Advisory:</b> Cement reorder threshold will be reached in 3 days; raise PO for 600 bags by Friday.</li>
-        </ul>
-      </div>
+    </div>
+  `:''}
+
+  ${tab==='whatsapp'?`
+    <div class="card" style="background:#f8fafc">
+      <h3>Simulated WhatsApp Action Feed</h3>
+      ${S.wa.length?S.wa.slice(0,10).map(m=>`
+        <div style="background:#fff;border-radius:9px;padding:9px 12px;margin:8px 0;max-width:540px;box-shadow:0 1px 2px rgba(0,0,0,0.05);border:1px solid #e2e8f0">
+          <div style="white-space:pre-line;font-size:12.5px">${m.txt}</div>
+          <div class="mut" style="font-size:11px;text-align:right;margin-top:4px">${m.d} ${m.t} · To: ${ROLES[m.to]||m.to}</div>
+        </div>
+      `).join(''):'<p class="mut">No messages yet.</p>'}
     </div>
   `:''}
 `;
 };
 
-function runAIAssistant(){
-  const q = $('#ai_q').value;
-  $('#ai_res').innerHTML = `
-    <b>⚡ AI Analysis generated for: "${q}"</b>
-    <p style="margin-top:6px;color:#334155">Analysis computed based on real-time SQLite database records (40 DPRs, 891 labor muster records, 36 PRs, and active WBS schedule):</p>
-    <ul style="margin:8px 0 0 18px">
-      <li>All concrete cube test results satisfy M25 / M30 characteristic strength criteria as per IS 456.</li>
-      <li>Procurement delivery on-time rate is 94.2% across Vizag Build Mart and Steel Authority dealers.</li>
-      <li>Next milestone billing trigger: Stage 4 (Pillars & Beams) at 100% will unlock ₹31,20,000 client invoice.</li>
-    </ul>
-  `;
-  toast('AI Assistant analysis completed');
-}
-
 /* Boot application */
 async function boot(){
   load();
   await loadServerState();
-  afterLogin();
-}
-
-function afterLogin(){
   const v = vis();
   if(!v.find(p=>p.id===S.ap)) S.ap = v[0] ? v[0].id : null;
-  const currentNavKeys = (S.filterByRole ? ROLE_MENUS[me().role] : null) || ALL_NAV.map(x=>x[0]);
-  if(!currentNavKeys.includes(S.v)) S.v = currentNavKeys[0] || 'dash';
   render();
 }
 
